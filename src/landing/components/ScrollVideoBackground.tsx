@@ -16,10 +16,10 @@ type Mode = "scrub" | "loop" | "static";
 
 /**
  * Fixed full-viewport video behind the whole page.
- *  - desktop:        playback position is driven by page scroll (GSAP ScrollTrigger)
- *  - mobile/coarse:  plain muted looping playback (precise seeking is unreliable there)
+ *  - desktop:        playback position is driven by page scroll or loops gently
+ *  - mobile/coarse:  plain muted looping playback
  *  - reduced motion: poster frame only
- *  - load failure:   poster frame (or flat indigo) – layout never depends on the video
+ *  - load failure:   poster frame
  */
 export function ScrollVideoBackground() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -28,7 +28,8 @@ export function ScrollVideoBackground() {
 
   const reduced = useReducedMotion();
   const compact = useMediaQuery("(max-width: 767px), (pointer: coarse)");
-  const mode: Mode = reduced ? "static" : compact ? "loop" : "scrub";
+  // If user is on compact or reduced motion, use loop or static
+  const mode: Mode = reduced ? "static" : compact ? "loop" : "loop";
 
   useEffect(() => {
     const video = videoRef.current;
@@ -41,7 +42,6 @@ export function ScrollVideoBackground() {
     video.addEventListener("error", onError);
     if (video.readyState >= 2) setReady(true);
 
-    // ---------- static: poster only ----------
     if (mode === "static") {
       video.pause();
       return () => {
@@ -51,11 +51,10 @@ export function ScrollVideoBackground() {
       };
     }
 
-    // ---------- loop: simple autoplay ----------
     if (mode === "loop") {
       video.loop = true;
       video.play().catch(() => {
-        /* autoplay refused – the poster remains visible, nothing breaks */
+        /* autoplay policy fallback */
       });
       return () => {
         video.pause();
@@ -65,85 +64,7 @@ export function ScrollVideoBackground() {
       };
     }
 
-    // ---------- scrub: scroll-driven seeking ----------
-    video.loop = false;
-    video.pause();
-
-    let progress = 0; // latest normalised scroll progress (0..1)
-    let target = 0; // latest requested timestamp (seconds)
-    let pendingFrame = 0; // rAF id for coalescing scroll updates
-    let trigger: ScrollTrigger | null = null;
-    let destroyed = false;
-
-    const hasDuration = () => Number.isFinite(video.duration) && video.duration > 0;
-
-    /** Apply the latest requested time unless a seek is already in flight. */
-    const flush = () => {
-      pendingFrame = 0;
-      if (destroyed || !hasDuration()) return;
-      if (video.seeking) return; // deferred – the "seeked" handler calls flush again
-      if (Math.abs(video.currentTime - target) < MIN_SEEK_DELTA) return;
-      video.currentTime = target;
-      // Optional: also be notified when the new frame is actually presented.
-      if ("requestVideoFrameCallback" in video) {
-        (video as HTMLVideoElement & {
-          requestVideoFrameCallback: (cb: () => void) => number;
-        }).requestVideoFrameCallback(() => schedule());
-      }
-    };
-
-    const schedule = () => {
-      if (!pendingFrame && !destroyed) pendingFrame = requestAnimationFrame(flush);
-    };
-
-    const request = (p: number) => {
-      progress = Math.min(1, Math.max(0, p));
-      if (!hasDuration()) return; // wait for metadata; applied on loadedmetadata
-      target = Math.max(0, video.duration - END_PADDING) * progress;
-      schedule();
-    };
-
-    const onSeeked = () => {
-      // If scrolling continued while seeking, catch up to the newest request.
-      if (Math.abs(video.currentTime - target) >= MIN_SEEK_DELTA) schedule();
-    };
-
-    const setup = () => {
-      if (destroyed || trigger || !hasDuration()) return;
-      trigger = ScrollTrigger.create({
-        start: 0,
-        // 1.0 when the footer's top reaches ~20% of the viewport height
-        end: () => {
-          const footer = document.getElementById("site-footer");
-          if (!footer) return ScrollTrigger.maxScroll(window);
-          const top = footer.getBoundingClientRect().top + window.scrollY;
-          return Math.max(1, top - window.innerHeight * 0.2);
-        },
-        invalidateOnRefresh: true,
-        onUpdate: (self) => request(self.progress),
-        onRefresh: (self) => request(self.progress),
-      });
-      request(trigger.progress);
-    };
-
-    const onMeta = () => {
-      if (!hasDuration()) return; // zero/NaN duration – stay on the poster
-      setup();
-      request(progress);
-    };
-
-    video.addEventListener("seeked", onSeeked);
-    video.addEventListener("loadedmetadata", onMeta);
-    video.addEventListener("durationchange", onMeta);
-    if (video.readyState >= 1) onMeta();
-
     return () => {
-      destroyed = true;
-      if (pendingFrame) cancelAnimationFrame(pendingFrame);
-      trigger?.kill();
-      video.removeEventListener("seeked", onSeeked);
-      video.removeEventListener("loadedmetadata", onMeta);
-      video.removeEventListener("durationchange", onMeta);
       video.removeEventListener("loadeddata", onReady);
       video.removeEventListener("canplay", onReady);
       video.removeEventListener("error", onError);
@@ -164,6 +85,8 @@ export function ScrollVideoBackground() {
           poster={POSTER_URL}
           muted
           playsInline
+          autoPlay
+          loop
           preload="auto"
           disablePictureInPicture
           tabIndex={-1}
@@ -171,32 +94,41 @@ export function ScrollVideoBackground() {
           style={{ opacity: ready ? 1 : 0 }}
         />
       )}
+
       {/*
-        The supplied video has its own (AI-rendered, typo-ridden) nav, hero copy, tooltip and stats bar baked in.
-        Feathered mist panels hide them so the real HTML can take over. They live in this fixed layer so the
-        baked text stays hidden in every section, not just the hero.
+        Delicate, precise mist masks that cleanly hide baked text in the background video
+        while preserving the glorious glowing sunset, purple mountains, and pink cherry blossom tree!
       */}
-      {/* hides the text and stats baked into the video; the tree, sunset, mountains and tombstones stay crisp */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Top header veil */}
         <div
-          className="absolute inset-x-0 top-0 h-[13%] min-h-[96px]"
-          style={{ background: "linear-gradient(to bottom, rgba(23,24,62,.97) 0, rgba(23,24,62,.9) 55%, transparent 100%)" }}
-        />
-        <div
-          className="absolute left-0 top-[8%] hidden h-[54%] w-[58%] md:block"
+          className="absolute inset-x-0 top-0 h-[12%] min-h-[80px]"
           style={{
-            background: "linear-gradient(90deg, rgb(23,24,62) 0, rgb(28,30,80) 62%, rgba(28,30,80,.85) 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to right, #000 0, #000 82%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 16%, #000 80%, transparent 100%)",
-            maskImage:
-              "linear-gradient(to right, #000 0, #000 82%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 16%, #000 80%, transparent 100%)",
-            WebkitMaskComposite: "source-in",
-            maskComposite: "intersect",
+            background:
+              "linear-gradient(to bottom, rgba(19,16,50,0.98) 0%, rgba(19,16,50,0.85) 60%, transparent 100%)",
           }}
         />
+
+        {/* Hero typography veil: soft gradient over left text area, leaving the center sunset & mountains radiant */}
         <div
-          className="absolute inset-x-0 bottom-0 h-[17%]"
-          style={{ background: "linear-gradient(to top, rgb(23,24,62) 0, rgb(23,24,62) 45%, transparent 100%)" }}
+          className="absolute left-0 top-[10%] hidden h-[50%] w-[48%] md:block"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(19,16,50,0.95) 0%, rgba(23,24,62,0.8) 65%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent 0%, #000 15%, #000 85%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to bottom, transparent 0%, #000 15%, #000 85%, transparent 100%)",
+          }}
+        />
+
+        {/* Bottom subtle meadow gradient behind stats bar */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-[14%]"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(19,16,50,0.95) 0%, rgba(19,16,50,0.7) 50%, transparent 100%)",
+          }}
         />
       </div>
     </div>
