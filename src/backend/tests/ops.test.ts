@@ -214,3 +214,35 @@ describe('backup', () => {
     }
   });
 });
+
+describe('drop-to-decide', () => {
+  const base = () => demoProjects(NOW).find((p) => p.name === 'SocialPulse')!;
+  it('Continue makes it active and records the decision', async () => {
+    const { decideProject, lastDecision } = await import('../domain/ops');
+    const p = decideProject(base(), 'continue', NOW);
+    expect(p.status).toBe('active');
+    expect(lastDecision(p)?.path).toBe('continue');
+  });
+  it('Restart resets progress, Pivot adds a tag, Repurpose and Archive archive it', async () => {
+    const { decideProject } = await import('../domain/ops');
+    expect(decideProject(base(), 'restart', NOW)).toMatchObject({ status: 'active', progress: 0 });
+    expect(decideProject(base(), 'pivot', NOW).tags).toContain('Pivoting');
+    expect(decideProject(decideProject(base(), 'pivot', NOW), 'pivot', NOW).tags.filter((t) => t === 'Pivoting')).toHaveLength(1);
+    expect(decideProject(base(), 'repurpose', NOW)).toMatchObject({ status: 'archived', selectedPath: 'repurpose' });
+    expect(decideProject(base(), 'archive', NOW)).toMatchObject({ status: 'archived', selectedPath: 'archive' });
+  });
+  it('reopens an archived project when it is continued', async () => {
+    const { decideProject } = await import('../domain/ops');
+    const archived = decideProject(base(), 'archive', NOW);
+    expect(decideProject(archived, 'continue', NOW)).toMatchObject({ status: 'active', archivedAt: null });
+  });
+  it('keeps the reason list and the single reason in step, without duplicates', async () => {
+    const { normaliseReasons, withReasons } = await import('../domain/ops');
+    const p = normaliseReasons(base());
+    expect(p.reasons).toEqual([p.stallReason]);
+    const q = withReasons(p, ['lack-of-time', 'lack-of-time', 'lost-interest']);
+    expect(q.reasons).toEqual(['lack-of-time', 'lost-interest']);
+    expect(q.stallReason).toBe('lack-of-time');
+    expect(withReasons(q, []).stallReason).toBeNull();
+  });
+});

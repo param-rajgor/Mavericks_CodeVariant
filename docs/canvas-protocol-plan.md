@@ -125,7 +125,7 @@
 **Minimum to ship: phases 1–3.** Phases 4–5 are only if time allows.
 
 ## Progress log
-- [ ] Phase 1: store + dnd-kit + Action Dock + undo
+- [x] Phase 1: store + dnd-kit + Action Dock + undo
 - [ ] Phase 2: Decision Shrine drop zones
 - [ ] Phase 3: seed packet planting
 - [ ] Phase 4: reason cards
@@ -133,3 +133,21 @@
 
 Notes:
 - (add notes here after each phase: what changed, known issues, what's next)
+- **Phase 1 (done):**
+  - Store (`backend/store/ProjectsContext.tsx`): `decide`, `addReason`, `removeReason`, `resetSamples`, `undo`, `canUndo`.
+    - Each change snapshots the list first (20 deep).
+    - Pure ops are in `backend/domain/ops.ts`: `decideProject`, `lastDecision`, `withReasons`, `normaliseReasons`. Tested in `backend/tests/ops.test.ts`.
+    - `Project.reasons` is optional and normalised on load. `stallReason` mirrors `reasons[0]`.
+  - Drag layer: `frontend/dnd/DragLayer.tsx`.
+    - Sensors: mouse 6px, touch 150ms/6px, keyboard. Space picks up and drops; arrows jump between zones; Esc cancels.
+    - Uses `pointerWithin`, then `rectIntersection`. There is one portalled `DragOverlay`, plus aria-live announcements.
+    - Droppables are measured with `MeasuringStrategy.Always`, because zones appear after the drag starts.
+    - IMPORTANT: never move a zone offscreen with transform before a drag. The dock only fades and shifts 24px.
+  - Zones: `frontend/dnd/DropZone.tsx` (pulse, 40% dim, hover lift, gold border, "DROP TO X", icon bounce, 10-spark burst). Icons are in `frontend/dnd/icons.ts`. CSS is at the end of `styles/theme.css`, under "Canvas Protocol".
+  - Dashboard: `graveyard/ActionDock.tsx` (6 zones). `GraveyardPage` wraps everything in `<DragLayer>`. Stones are `DraggableStone`, with a dashed ghost slot, a grip mark and a 300ms sink on archive/repurpose.
+    - The INSPECT button is removed from the Project Found panel, which now shows "Last decision" and a drag hint.
+    - The tooltip's OPEN PROJECT is replaced by "Drag to decide · click to look".
+  - Undo: a toast with Undo (5s), plus `shell/UndoKeys.tsx` (Ctrl/Cmd+Z, Shift+R restores the samples).
+  - z-index scale added to the theme: dock 60, drag 120, toast 130.
+  - Not yet checked: the fps trace in DevTools, and a keyboard-drag pass in a real browser.
+  - Next: Phase 2 (Decision Shrine path cards → drop zones on pedestals).

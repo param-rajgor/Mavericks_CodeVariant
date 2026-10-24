@@ -67,9 +67,11 @@
   --z-stones: 10;
   --z-grass: 20;
   --z-bars: 50;
+  --z-dock: 60;
   --z-tooltip: 80;
   --z-panel: 100;
-  --z-toast: 110;
+  --z-drag: 120;
+  --z-toast: 130;
 
   /* Backgrounds and sky */
   --color-night-indigo: #24234f;
@@ -504,3 +506,119 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
 .scroll-mouse i { position: absolute; left: 50%; top: 7px; width: 4px; height: 8px; margin-left: -2px; background: var(--color-gold); animation: mouse-wheel 1.2s ease-out infinite; }
 @media (max-width: 700px) { .scroll-badge { display: none; } }
 @media (prefers-reduced-motion: reduce) { .scroll-mouse i { animation: none; } }
+
+/* ==========================================================================
+   Canvas Protocol: drag-and-drop (docs/canvas-protocol-plan.md)
+   Only transform and opacity animate; glows are hard-edged and few.
+   ========================================================================== */
+body.dnd-active, body.dnd-active * { cursor: grabbing !important; }
+/* the stone hover glow and lift switch off while something is being dragged */
+body.dnd-active [data-stone] .stone-glow { filter: none !important; }
+
+[data-draggable] { cursor: grab; touch-action: none; }
+
+/* The card under the pointer: lifted, tilted, with a hard 6px pixel shadow. */
+.drag-lift {
+  transform: scale(1.06) rotate(3deg);
+  filter: drop-shadow(6px 6px 0 rgba(20, 18, 46, 0.9));
+  transition: transform 120ms ease-out;
+}
+
+/* What stays behind while its card is away: a dashed outline of the slot. */
+.ghost-slot { position: relative; }
+.ghost-slot > * { opacity: 0.18; }
+.ghost-slot::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 4px dashed var(--color-lavender);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- zones */
+@keyframes zone-pulse { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(-2px); opacity: 0.86; } }
+@keyframes zone-bounce { 0% { transform: translateY(0); } 40% { transform: translateY(-8px); } 70% { transform: translateY(0); } 85% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
+@keyframes zone-spark { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4); opacity: 0; } }
+
+.drop-zone {
+  position: relative;
+  flex: none;
+  margin: 4px;
+  background: var(--color-deep-panel);
+  color: var(--color-text-primary);
+  box-shadow: -4px 0 0 0 var(--zone), 4px 0 0 0 var(--zone), 0 -4px 0 0 var(--zone), 0 4px 0 0 var(--zone), 0 8px 0 0 #14122e;
+  transition: transform 150ms ease-out, opacity 150ms ease-out;
+}
+.drop-zone__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 100%;
+  padding: 8px;
+  text-align: center;
+}
+/* a band of the zone's own colour behind the label, so the zone reads at a glance */
+.drop-zone__inner::before { content: ''; position: absolute; inset: 0; background: var(--zone); opacity: 0.16; }
+.drop-zone__icon { position: relative; line-height: 0; }
+.drop-zone__icon--bounce { animation: zone-bounce 420ms ease-out 1; }
+.drop-zone__label { position: relative; font-family: var(--font-display); font-size: 26px; line-height: 0.95; letter-spacing: 1px; color: var(--zone); text-shadow: 0 2px 0 #14122e; }
+.drop-zone__hint { position: relative; font-family: var(--font-body); font-size: 14px; line-height: 1.2; color: var(--color-text-secondary); }
+
+.drop-zone--valid { animation: zone-pulse 1.6s ease-in-out infinite; }
+.drop-zone--invalid { opacity: 0.4; }
+.drop-zone--over {
+  transform: translateY(-4px);
+  background: #2c2870;
+  box-shadow: -4px 0 0 0 var(--color-gold), 4px 0 0 0 var(--color-gold), 0 -4px 0 0 var(--color-gold), 0 4px 0 0 var(--color-gold), 0 10px 0 0 #14122e;
+}
+.drop-zone--over .drop-zone__inner::before { opacity: 0.32; }
+.drop-zone--over .drop-zone__label { color: var(--color-text-primary); font-size: 22px; }
+
+.drop-zone__burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.drop-zone__burst i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--zone);
+  box-shadow: 0 0 0 2px #14122e;
+  animation: zone-spark 520ms ease-out forwards;
+}
+
+/* ---------------------------------------------------------------- the dashboard dock */
+.action-dock {
+  position: fixed;
+  left: 50%;
+  z-index: var(--z-dock);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 18px 18px;
+  max-width: calc(100vw - 24px);
+  background: rgba(30, 28, 72, 0.94);
+  box-shadow: -4px 0 0 0 var(--color-lavender), 4px 0 0 0 var(--color-lavender), 0 -4px 0 0 var(--color-lavender), 0 4px 0 0 var(--color-lavender), 0 8px 0 0 #14122e;
+  /* it stays in place, only faded out, so the drag layer always knows where its zones are */
+  transform: translate(-50%, 24px);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 200ms ease-out, opacity 200ms ease-out, visibility 0s 200ms;
+  pointer-events: none;
+}
+.action-dock--open { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition: transform 200ms ease-out, opacity 200ms ease-out; pointer-events: auto; }
+.action-dock__title { flex: 1 0 100%; text-align: center; font-family: var(--font-display); font-size: 24px; letter-spacing: 1px; color: var(--color-gold); text-shadow: 0 2px 0 #14122e; }
+@media (max-width: 760px) { .action-dock .drop-zone { width: 104px !important; height: 92px !important; } .action-dock .drop-zone__label { font-size: 20px; } }
+
+/* the stone that was archived sinks into the ground before it moves on */
+@keyframes stone-sink { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(60px); opacity: 0; } }
+.stone-sink { animation: stone-sink 300ms ease-in forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .drag-lift { transform: none; }
+  .drop-zone--valid, .drop-zone__icon--bounce, .drop-zone__burst, .stone-sink { animation: none !important; }
+  .drop-zone__burst { display: none; }
+}

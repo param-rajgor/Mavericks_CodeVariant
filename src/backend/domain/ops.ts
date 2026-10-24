@@ -7,7 +7,7 @@ import { analyzeProject, projectToInput } from '@/backend/domain/analysis';
 import { PATHS, STATUS_META } from '@/backend/domain/paths';
 import { diffEvents, makeEvent, newId, pathSelectedEvent, type EventDraft } from '@/backend/domain/timeline';
 import { draftToFields, type ProjectDraft } from '@/backend/domain/draft';
-import type { OpenStatus, PathId, Project, TimelineEvent } from '@/backend/domain/types';
+import type { OpenStatus, PathId, Project, StallReason, TimelineEvent } from '@/backend/domain/types';
 
 type Fields = ReturnType<typeof draftToFields>;
 
@@ -118,4 +118,58 @@ export function restoreProject(old: Project, status: OpenStatus, now: Date = new
   };
   const next = withDerived(reopened, now);
   return append(next, [{ type: 'restored', description: `Restored as ${STATUS_META[status].label}. Everything from before is still here.` }, ...derivedEvents(old, next)], now);
+}
+
+/**
+ * The one decision a user makes by dropping a project on a path (Canvas Protocol).
+ * Continue → active. Restart → active, progress back to 0. Pivot → active, tagged "Pivoting".
+ * Repurpose and Archive → archived. Every decision is a "path-selected" event in the timeline.
+ */
+export function decideProject(old: Project, path: PathId, now: Date = new Date()): Project {
+  if (path === 'archive') return archiveProject(old, '', now);
+  if (path === 'repurpose') {
+    const events: EventDraft[] = [pathSelectedEvent('repurpose', old.selectedPath)];
+    if (old.status !== 'archived') events.push({ type: 'archived', description: 'Archived so its parts can be reused. History and assets are kept.' });
+    return append(
+      {
+        ...old,
+        status: 'archived',
+        previousStatus: old.status === 'archived' ? old.previousStatus : (old.status as OpenStatus),
+        selectedPath: 'repurpose',
+        archivedAt: old.archivedAt ?? now.toISOString(),
+      },
+      events,
+      now,
+    );
+  }
+  // reopening an archived project first, so its history says it came back
+  const base = old.status === 'archived' ? { ...old, status: 'stalled' as OpenStatus, archivedAt: null } : old;
+  let next = choosePath(base, path, now);
+  if (path === 'restart' && next.progress !== 0) next = editProject(next, { progress: 0 }, now);
+  if (path === 'pivot' && !next.tags.some((t) => t.toLowerCase() === 'pivoting')) next = { ...next, tags: [...next.tags, 'Pivoting'] };
+  return next;
+}
+
+/** The most recent decision recorded in a project's timeline, if any. */
+export function lastDecision(p: Project): { path: PathId; at: string } | null {
+  for (let i = p.timeline.length - 1; i >= 0; i--) {
+    const e = p.timeline[i];
+    if (e.type === 'path-selected' && typeof e.meta?.path === 'string') return { path: e.meta.path as PathId, at: e.at };
+  }
+  return null;
+}
+
+/** Projects keep a list of reasons; the first one also fills the older single `stallReason` field the score reads. */
+export function withReasons(p: Project, reasons: StallReason[]): Project {
+  const unique = [...new Set(reasons)];
+  return { ...p, reasons: unique, stallReason: unique[0] ?? null };
+}
+
+/** Older records only have `stallReason`; give them the list form, and keep both fields in step. */
+export function normaliseReasons(p: Project): Project {
+  let reasons = Array.isArray(p.reasons) ? [...new Set(p.reasons)] : [];
+  if (p.stallReason && !reasons.includes(p.stallReason)) reasons = [p.stallReason, ...reasons];
+  const stallReason = p.stallReason ?? reasons[0] ?? null;
+  if (Array.isArray(p.reasons) && reasons.length === p.reasons.length && reasons.every((r, i) => r === p.reasons![i]) && stallReason === p.stallReason) return p;
+  return { ...p, reasons, stallReason };
 }

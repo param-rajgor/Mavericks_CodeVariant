@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight } from 'lucide-react';
-import { PixelButton } from '@/frontend/ui/PixelButton';
 import type { Stone as Project } from '@/frontend/graveyard/stone';
 import { StatusPill } from './StatusPill';
 
@@ -10,7 +9,6 @@ interface TooltipProps {
   variant: 'landing' | 'dashboard';
   /** The stone it points at. The tooltip lives in <body>, so it follows this element's on-screen box. */
   anchor: RefObject<HTMLElement | null>;
-  onOpen?: () => void;
 }
 
 const WIDTH = 320;
@@ -18,11 +16,11 @@ const EDGE = 12;
 const GAP = 22;
 
 /**
- * The speech bubble above a gravestone: a cream bubble on the landing page, a dark panel with an
- * "Open project" button on the dashboard. Large, high-contrast type so it reads at a glance.
+ * The speech bubble above a gravestone: a cream bubble on the landing page, a dark panel on the dashboard
+ * that says how to use the stone (drag it to decide, click it to look). Large, high-contrast type so it reads at a glance.
  * Rendered into a portal (see Gravestone), so no scene layer or stone can ever paint over it.
  */
-export function GravestoneTooltip({ project, variant, anchor, onOpen }: TooltipProps) {
+export function GravestoneTooltip({ project, variant, anchor }: TooltipProps) {
   const isLanding = variant === 'landing';
   const fill = isLanding ? '#fff7e6' : 'var(--color-deep-panel)';
   const border = isLanding ? 'var(--color-stone-outline)' : 'var(--color-lavender)';
@@ -87,17 +85,8 @@ export function GravestoneTooltip({ project, variant, anchor, onOpen }: TooltipP
           Click to open this project <ChevronRight size={20} aria-hidden="true" />
         </div>
       ) : (
-        <div style={{ marginTop: 14, pointerEvents: 'auto' }}>
-          <PixelButton
-            variant="gold"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpen?.();
-            }}
-          >
-            <ChevronRight size={16} /> OPEN PROJECT
-          </PixelButton>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontFamily: 'var(--font-display)', fontSize: 24, letterSpacing: 1, color: 'var(--color-gold)' }}>
+          Drag to decide · click to look
         </div>
       )}
       <span

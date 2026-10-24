@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { memo, useEffect, useRef, useState, type PointerEvent } from 'react';
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Stone as Project } from '@/frontend/graveyard/stone';
@@ -132,10 +133,35 @@ interface GravestoneProps {
   /** Shared-element id for the landing → dashboard transition. */
   layoutId?: string;
   onClick?: () => void;
-  onOpenProject?: () => void;
+  /** Makes the stone a draggable data card (Canvas Protocol). */
+  drag?: { setNodeRef: (el: HTMLElement | null) => void; listeners: DraggableSyntheticListeners; attributes: DraggableAttributes; isDragging: boolean };
 }
 
-export function Gravestone({ project, variant, selected, tooltip = true, layoutId, onClick, onOpenProject }: GravestoneProps) {
+/** The stone itself, with nothing interactive: used for the card that follows the pointer while dragging. */
+export function StoneFace({ project }: { project: Project }) {
+  const Icon = PROJECT_ICONS[project.icon];
+  return (
+    <div style={{ position: 'relative', width: STONE_WIDTH, height: STONE_HEIGHT }}>
+      <StoneShape seed={seedFor(project.id)} />
+      <div style={{ position: 'absolute', top: 62, left: 10, right: 10, bottom: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, fontFamily: 'var(--font-display)' }}>
+        <Icon size={38} color="#4A3E80" />
+        <span style={{ fontSize: 30, lineHeight: 0.95, letterSpacing: 1, color: '#2E2560', textAlign: 'center' }}>{project.name}</span>
+        <StatusPill status={project.status} />
+      </div>
+    </div>
+  );
+}
+
+/** A 2×3 pixel grip on top of a draggable stone: the cue that it can be picked up. */
+function Grip() {
+  return (
+    <svg aria-hidden="true" width={18} height={26} viewBox="0 0 3 5" shapeRendering="crispEdges" style={{ position: 'absolute', top: 30, right: 22, pointerEvents: 'none' }}>
+      {[0, 2, 4].map((y) => [0, 2].map((x) => <rect key={`${x}${y}`} x={x} y={y} width={1} height={1} fill="#4A3E80" />))}
+    </svg>
+  );
+}
+
+export const Gravestone = memo(function Gravestone({ project, variant, selected, tooltip = true, layoutId, onClick, drag }: GravestoneProps) {
   const [hovered, setHovered] = useState(false);
   const anchor = useRef<HTMLDivElement>(null);
   const closing = useRef(0);
@@ -150,6 +176,7 @@ export function Gravestone({ project, variant, selected, tooltip = true, layoutI
   // The short delay lets the pointer cross the gap between the stone and its tooltip.
   const enter = (e: PointerEvent) => {
     if (e.pointerType === 'touch') return; // like a hover: a tap selects the stone instead
+    if (document.body.classList.contains('dnd-active')) return; // no tooltips or lifting mid-drag
     clearTimeout(closing.current);
     setHovered(true);
   };
@@ -161,7 +188,7 @@ export function Gravestone({ project, variant, selected, tooltip = true, layoutI
   return (
     <div ref={anchor} data-stone={project.id} onPointerEnter={enter} onPointerLeave={leave} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {createPortal(
-        <AnimatePresence>{hovered && tooltip && <GravestoneTooltip project={project} variant={variant} anchor={anchor} onOpen={onOpenProject} />}</AnimatePresence>,
+        <AnimatePresence>{hovered && tooltip && <GravestoneTooltip project={project} variant={variant} anchor={anchor} />}</AnimatePresence>,
         document.body,
       )}
 
@@ -169,7 +196,13 @@ export function Gravestone({ project, variant, selected, tooltip = true, layoutI
         type="button"
         layoutId={layoutId}
         onClick={onClick}
-        animate={{ y: hovered ? -6 : 0 }}
+        ref={drag?.setNodeRef}
+        {...(drag ? drag.listeners : {})}
+        aria-describedby={drag?.attributes['aria-describedby']}
+        aria-roledescription={drag ? 'draggable project stone' : undefined}
+        aria-pressed={drag ? !!selected : undefined}
+        data-draggable={drag ? '' : undefined}
+        animate={{ y: hovered && !drag?.isDragging ? -6 : 0 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
         style={{
           position: 'relative',
@@ -178,17 +211,18 @@ export function Gravestone({ project, variant, selected, tooltip = true, layoutI
           background: 'none',
           border: 'none',
           padding: 0,
-          cursor: 'pointer',
+          cursor: drag ? 'grab' : 'pointer',
           display: 'block',
         }}
       >
         {/* `none` when off: an always-on filter (even a transparent one) costs every stone a filter pass. CSS
          * still interpolates none ↔ the drop-shadow list, so the 150ms fade is kept. */}
-        <div style={{ filter: showGlow ? GLOW_ON : 'none', transition: 'filter 150ms ease-out' }}>
+        <div className="stone-glow" style={{ filter: showGlow ? GLOW_ON : 'none', transition: 'filter 150ms ease-out' }}>
           <StoneShape seed={seed} />
         </div>
 
         {vine && <Vine size={vine} />}
+        {drag && <Grip />}
 
         <div
           style={{
@@ -237,4 +271,4 @@ export function Gravestone({ project, variant, selected, tooltip = true, layoutI
       </motion.button>
     </div>
   );
-}
+});

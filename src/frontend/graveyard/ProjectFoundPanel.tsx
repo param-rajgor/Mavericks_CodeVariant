@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useIsPresent } from 'motion/react';
-import { Calendar, Tag, ArrowUpRight } from 'lucide-react';
-import { PixelButton } from '@/frontend/ui/PixelButton';
+import { Calendar, Tag } from 'lucide-react';
 import { PROJECT_ICONS } from '@/frontend/graveyard/gravestone/icons';
 import type { Stone as Project } from '@/frontend/graveyard/stone';
 
@@ -221,9 +220,14 @@ export function ProjectFoundPanel({ project, onInspect }: ProjectFoundPanelProps
         </div>
       </div>
 
-      <PixelButton variant="gold" onClick={onInspect} style={{ width: 'calc(100% - 8px)', justifyContent: 'center' }}>
-        INSPECT THIS IDEA <ArrowUpRight size={20} />
-      </PixelButton>
+      {project.lastDecision && (
+        <div style={{ fontSize: 18, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
+          Last decision: <strong style={{ color: 'var(--color-gold)' }}>{project.lastDecision}</strong>
+        </div>
+      )}
+      <p style={{ margin: 0, padding: '10px 12px', border: '2px dashed var(--color-lavender)', fontSize: 17, lineHeight: 1.4, color: 'var(--color-text-primary)' }}>
+        Drag this stone onto <strong style={{ color: 'var(--color-gold)' }}>LOOK CLOSER</strong> for the full story, or onto a path to decide its fate.
+      </p>
     </motion.div>
   );
 }

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { OpenStatus, PathId, Project } from '@/backend/domain/types';
+import type { OpenStatus, PathId, Project, StallReason } from '@/backend/domain/types';
 import type { ProjectDraft } from '@/backend/domain/draft';
-import { archiveProject, choosePath, createProject, editProject, restoreProject, updateProgress } from '@/backend/domain/ops';
+import { archiveProject, choosePath, createProject, decideProject, editProject, normaliseReasons, restoreProject, updateProgress, withReasons } from '@/backend/domain/ops';
 import { dedupeSamples, demoProjects, RETIRED_SAMPLE_IDS } from '@/backend/domain/seed';
 import { buildBackup, parseBackup } from '@/backend/domain/backup';
 import { draftToFields } from '@/backend/domain/draft';
@@ -28,6 +28,14 @@ interface Actions {
   loadSamples(): Promise<void>;
   exportJson(): string;
   importJson(text: string): Promise<ImportSummary>;
+  /** Drop-to-decide: see `decideProject` for what each path does. */
+  decide(id: string, path: PathId): Promise<Project>;
+  addReason(id: string, reason: StallReason): Promise<Project>;
+  removeReason(id: string, reason: StallReason): Promise<Project>;
+  /** Puts back the twelve sample projects as they ship. Projects the user created are kept. */
+  resetSamples(): Promise<void>;
+  /** Reverts the most recent change. Resolves false when there is nothing to undo. */
+  undo(): Promise<boolean>;
 }
 
 interface Ctx {
@@ -40,7 +48,11 @@ interface Ctx {
   retry(): void;
   continueWithoutSaving(): void;
   actions: Actions;
+  /** True when there is a change that `actions.undo` can revert. */
+  canUndo: boolean;
 }
+
+const UNDO_DEPTH = 20;
 
 const ProjectsCtx = createContext<Ctx | null>(null);
 
@@ -54,6 +66,13 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   memRef.current = memoryOnly;
   const projectsRef = useRef<Project[]>([]);
   projectsRef.current = projects;
+  // Snapshots of the whole list taken before each change, newest last. The list is small, so whole copies are cheap.
+  const history = useRef<Project[][]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const snapshot = useCallback(() => {
+    history.current = [...history.current.slice(-(UNDO_DEPTH - 1)), projectsRef.current];
+    setCanUndo(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +112,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
           await Promise.all(drop.map((p) => db.deleteProject(p.id)));
           all = keep;
         }
+        all = all.map(normaliseReasons);
         if (!cancelled) {
           setProjects(all);
           setState('ready');
@@ -110,11 +130,13 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   }, [attempt]);
 
   /** Persist first; only update the view if the write succeeded, so we never claim a save that failed. */
-  const commit = useCallback(async (p: Project) => {
+  const commit = useCallback(async (raw: Project) => {
+    const p = normaliseReasons(raw);
     if (!memRef.current) await db.putProject(p);
+    snapshot(); // the view still holds the old list here, which is what undo puts back
     setProjects((prev) => (prev.some((x) => x.id === p.id) ? prev.map((x) => (x.id === p.id ? p : x)) : [p, ...prev]));
     return p;
-  }, []);
+  }, [snapshot]);
 
   const find = useCallback((id: string) => {
     const p = projectsRef.current.find((x) => x.id === id);
@@ -139,10 +161,12 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       archive: (id, note) => commit(archiveProject(find(id), note)),
       restore: (id, status) => commit(restoreProject(find(id), status)),
       remove: async (id) => {
+        snapshot();
         if (!memRef.current) await db.deleteProject(id);
         setProjects((prev) => prev.filter((p) => p.id !== id));
       },
       removeAll: async () => {
+        snapshot();
         if (!memRef.current) {
           await db.clearProjects();
           await db.setMeta('seeded', true); // never re-add samples after a deliberate wipe
@@ -150,6 +174,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         setProjects([]);
       },
       loadSamples: async () => {
+        snapshot();
         const samples = demoProjects();
         if (!memRef.current) await db.putProjects(samples);
         setProjects((prev) => [...samples, ...prev.filter((p) => !samples.some((s) => s.id === p.id))]);
@@ -158,6 +183,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       importJson: async (text) => {
         const parsed = parseBackup(text);
         if (!parsed.ok) throw new Error(parsed.error);
+        snapshot();
         if (!memRef.current) await db.putProjects(parsed.projects);
         const existing = new Set(projectsRef.current.map((p) => p.id));
         const replaced = parsed.projects.filter((p) => existing.has(p.id)).length;
@@ -168,8 +194,41 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         });
         return { added: parsed.projects.length - replaced, replaced, skipped: parsed.skipped };
       },
+      decide: (id, path) => commit(decideProject(find(id), path)),
+      addReason: (id, reason) => {
+        const old = find(id);
+        const list = old.reasons ?? [];
+        return list.includes(reason) ? Promise.resolve(old) : commit(withReasons(old, [...list, reason]));
+      },
+      removeReason: (id, reason) => {
+        const old = find(id);
+        return commit(withReasons(old, (old.reasons ?? []).filter((r) => r !== reason)));
+      },
+      resetSamples: async () => {
+        snapshot();
+        const samples = demoProjects();
+        const stale = projectsRef.current.filter((p) => p.isDemo && !samples.some((s) => s.id === p.id));
+        if (!memRef.current) {
+          await Promise.all(stale.map((p) => db.deleteProject(p.id)));
+          await db.putProjects(samples);
+        }
+        setProjects((prev) => [...samples, ...prev.filter((p) => !p.isDemo)]);
+      },
+      undo: async () => {
+        const before = history.current.pop();
+        setCanUndo(history.current.length > 0);
+        if (!before) return false;
+        const now = projectsRef.current;
+        if (!memRef.current) {
+          const gone = now.filter((p) => !before.some((b) => b.id === p.id));
+          await Promise.all(gone.map((p) => db.deleteProject(p.id)));
+          await db.putProjects(before);
+        }
+        setProjects(before);
+        return true;
+      },
     }),
-    [commit, find],
+    [commit, find, snapshot],
   );
 
   const value = useMemo<Ctx>(
@@ -189,8 +248,9 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         setState('ready');
       },
       actions,
+      canUndo,
     }),
-    [state, error, memoryOnly, projects, actions],
+    [state, error, memoryOnly, projects, actions, canUndo],
   );
 
   return <ProjectsCtx.Provider value={value}>{children}</ProjectsCtx.Provider>;

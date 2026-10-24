@@ -68,6 +68,8 @@ export interface Project {
   assets: AssetCategory[];
   assetNotes: string;
   stallReason: StallReason | null;
+  /** Every reason the user has pinned on it. The first is mirrored in `stallReason`, which the score reads. */
+  reasons?: StallReason[];
   stallReasonDetails: string;
   /** 1 (barely) – 5 (very). */
   currentInterest: number | null;
