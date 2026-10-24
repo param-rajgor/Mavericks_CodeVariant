@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { archiveProject, choosePath, createProject, editProject, restoreProject, updateProgress } from '../domain/ops';
 import { emptyDraft, hasErrors, projectToDraft, validateAll, validateStep, type ProjectDraft } from '../domain/draft';
 import { DEFAULT_QUERY, queryProjects, statusCounts } from '../domain/query';
-import { demoProjects } from '../domain/seed';
+import { dedupeSamples, demoProjects } from '../domain/seed';
 import { buildBackup, parseBackup } from '../domain/backup';
 import { byNewest } from '../domain/timeline';
 import { daysAgoStr } from '../domain/dates';
@@ -118,40 +118,40 @@ describe('paths, archive, restore', () => {
 describe('portfolio query', () => {
   const demos = demoProjects(NOW);
   it('hides archived projects from the default view and shows them under Archived', () => {
-    expect(queryProjects(demos, DEFAULT_QUERY, NOW).map((p) => p.name)).not.toContain('Portfolio Redesign');
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, status: 'archived' }, NOW).map((p) => p.name)).toEqual(['Portfolio Redesign']);
+    expect(queryProjects(demos, DEFAULT_QUERY, NOW).map((p) => p.name)).not.toContain('Portfolio v1');
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, status: 'archived' }, NOW).map((p) => p.name).sort()).toEqual(['Old Blog', 'Poetry Bot', 'Portfolio v1']);
   });
   it('searches name, description and tags', () => {
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, search: 'travel' }, NOW)).toHaveLength(1);
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, search: 'flashcards' }, NOW).map((p) => p.name)).toEqual(['AI Study App']);
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, search: 'python' }, NOW)).toHaveLength(1);
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, search: 'marketplace' }, NOW).map((p) => p.name)).toEqual(['CampusKart']);
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, search: 'analytics' }, NOW).map((p) => p.name)).toContain('SocialPulse');
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, search: 'python' }, NOW).map((p) => p.name)).toContain('ML Classifier');
     expect(queryProjects(demos, { ...DEFAULT_QUERY, search: 'zzz' }, NOW)).toHaveLength(0);
   });
   it('filters by status, domain and tag', () => {
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, status: 'stalled' }, NOW).map((p) => p.name)).toEqual(['AI Study App']);
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, domain: 'Business' }, NOW)).toHaveLength(1);
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, tag: 'web' }, NOW)).toHaveLength(2);
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, status: 'stalled' }, NOW).map((p) => p.name).sort()).toEqual(['Budget Buddy', 'Pixel Planner', 'Recipe Remix', 'SocialPulse']);
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, domain: 'Business' }, NOW).map((p) => p.name)).toEqual(['CampusKart']);
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, tag: 'web' }, NOW).map((p) => p.name).sort()).toEqual(['CampusKart', 'SocialPulse']);
   });
   it('sorts by score, last worked and progress', () => {
     const scores = queryProjects(demos, { ...DEFAULT_QUERY, sort: 'score' }, NOW).map((p) => p.score!);
     expect(scores).toEqual([...scores].sort((a, b) => b - a));
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, sort: 'last-worked' }, NOW)[0].name).toBe('E-commerce Site');
-    expect(queryProjects(demos, { ...DEFAULT_QUERY, sort: 'progress' }, NOW)[0].name).toBe('AI Study App');
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, sort: 'last-worked' }, NOW)[0].name).toBe('Habit Garden');
+    expect(queryProjects(demos, { ...DEFAULT_QUERY, sort: 'progress' }, NOW)[0].name).toBe('Habit Garden');
   });
   it('counts statuses', () => {
-    expect(statusCounts(demos)).toEqual({ all: 3, active: 1, stalled: 1, 'needs-direction': 1, archived: 1 });
+    expect(statusCounts(demos)).toEqual({ all: 9, active: 3, stalled: 4, 'needs-direction': 2, archived: 3 });
   });
 });
 
 describe('sample projects', () => {
   const demos = demoProjects(NOW);
-  it('match the presentation', () => {
+  it('include the four tombstones shown in the landing artwork', () => {
     const by = Object.fromEntries(demos.map((p) => [p.name, p]));
-    expect(by['AI Study App']).toMatchObject({ status: 'stalled', progress: 60, tags: ['Study', 'Python', 'Personal'] });
-    expect(by['Travel Planner']).toMatchObject({ status: 'needs-direction', progress: 25 });
-    expect(by['E-commerce Site']).toMatchObject({ status: 'active', progress: 40 });
-    expect(by['Portfolio Redesign']).toMatchObject({ status: 'archived' });
-    expect(by['Portfolio Redesign'].archiveNote.length).toBeGreaterThan(20);
+    expect(by['SocialPulse']).toMatchObject({ status: 'stalled', progress: 40 });
+    expect(by['CampusKart']).toMatchObject({ status: 'active', progress: 40 });
+    expect(by['ML Classifier']).toMatchObject({ status: 'needs-direction', progress: 25 });
+    expect(by['Portfolio v1']).toMatchObject({ status: 'archived' });
+    expect(by['Portfolio v1'].archiveNote.length).toBeGreaterThan(20);
   });
   it('are flagged as demo, including their timeline events', () => {
     for (const p of demos) {
@@ -159,11 +159,14 @@ describe('sample projects', () => {
       p.timeline.forEach((e) => expect(e.demo).toBe(true));
     }
   });
-  it('recommend the paths shown in the presentation', () => {
+  it('cover a spread of recommendations so the demo shows different paths', () => {
     const by = Object.fromEntries(demos.map((p) => [p.name, p.recommendedPath]));
-    expect(by['AI Study App']).toBe('continue');
-    expect(by['Travel Planner']).toBe('restart');
-    expect(by['E-commerce Site']).toBe('pivot');
+    expect(by['SocialPulse']).toBe('restart');
+    expect(by['CampusKart']).toBe('pivot');
+    expect(by['ML Classifier']).toBe('restart');
+    expect(by['Habit Garden']).toBe('continue');
+    expect(by['Recipe Remix']).toBe('repurpose');
+    expect(by['Portfolio v1']).toBe('archive');
   });
   it('sorts newest first', () => {
     const t = [...demos[0].timeline].sort(byNewest);
@@ -171,16 +174,31 @@ describe('sample projects', () => {
   });
 });
 
+describe('sample duplication', () => {
+  it('uses stable ids, so seeding twice cannot duplicate', () => {
+    expect(demoProjects(NOW).map((p) => p.id)).toEqual(demoProjects(NOW).map((p) => p.id));
+    expect(new Set(demoProjects(NOW).map((p) => p.id)).size).toBe(12);
+  });
+  it('repairs existing duplicates and leaves user projects alone', () => {
+    const mine = createProject(draft(), NOW);
+    const dupes = [...demoProjects(NOW), ...demoProjects(NOW).map((p) => ({ ...p, id: p.id + '-copy' })), mine];
+    const { keep, drop } = dedupeSamples(dupes);
+    expect(keep).toHaveLength(13);
+    expect(drop).toHaveLength(12);
+    expect(keep).toContain(mine);
+  });
+});
+
 describe('backup', () => {
   it('exports score inputs, path, timeline and archive notes, and re-imports cleanly', () => {
     const demos = demoProjects(NOW);
     const backup = buildBackup(demos, NOW);
-    const portfolio = backup.projects.find((p) => p.name === 'Portfolio Redesign')!;
+    const portfolio = backup.projects.find((p) => p.name === 'Portfolio v1')!;
     expect(portfolio.archiveNote).toBeTruthy();
     expect(portfolio.timeline.length).toBeGreaterThan(0);
     expect(portfolio.analysis.factors).toHaveLength(5);
     const parsed = parseBackup(JSON.stringify(backup), NOW);
-    expect(parsed.ok && parsed.projects.length).toBe(4);
+    expect(parsed.ok && parsed.projects.length).toBe(12);
   });
   it('rejects garbage without throwing', () => {
     expect(parseBackup('not json').ok).toBe(false);

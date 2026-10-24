@@ -1,4 +1,4 @@
-import { FileText, Gauge, Signpost, Sparkles, type LucideIcon } from "lucide-react";
+import { FileText, Gauge, Ghost, Signpost, Sparkles, type LucideIcon } from "lucide-react";
 import { PixelButton } from "@/src/landing/components/PixelButton";
 import { Reveal } from "@/src/landing/components/Reveal";
 import { PathIcon } from "@/src/landing/components/icons";
@@ -17,8 +17,18 @@ interface Scene {
 
 const SCENES: Scene[] = [
   {
-    id: "features",
+    id: "graveyard-scene",
     n: "01",
+    icon: Ghost,
+    title: "The Project Graveyard",
+    body: "Every unfinished idea rests here until you decide what happens next.",
+    points: ["Hover a tombstone to read about it", "Click one to open its page", "Stalled is not failed, just paused"],
+    side: "right",
+    accent: "#F1A0E8",
+  },
+  {
+    id: "features",
+    n: "02",
     icon: FileText,
     title: "Capture it",
     body: "Log an unfinished project in about two minutes.",
@@ -28,7 +38,7 @@ const SCENES: Scene[] = [
   },
   {
     id: "understand",
-    n: "02",
+    n: "03",
     icon: Sparkles,
     title: "Understand it",
     body: "See what you built, how long it has rested, and which parts can still be reused.",
@@ -38,7 +48,7 @@ const SCENES: Scene[] = [
   },
   {
     id: "score",
-    n: "03",
+    n: "04",
     icon: Gauge,
     title: "Get a clear score",
     body: "A transparent Relaunch Score shows how worth reviving each project is.",
@@ -54,9 +64,9 @@ function Card({ scene }: { scene: Scene }) {
     <section
       id={scene.id}
       aria-labelledby={`${scene.id}-title`}
-      className="relative z-10 mx-auto flex min-h-[100svh] w-[90%] max-w-[1280px] items-start justify-center pt-[16vh] md:justify-end"
+      className="pointer-events-none relative z-10 mx-auto flex min-h-[90svh] w-[90%] max-w-[1280px] items-start justify-center pt-[16vh] md:justify-end"
     >
-      <Reveal className="px-box w-full max-w-[26rem] bg-navy/85 p-6 sm:p-8">
+      <Reveal className="px-box pointer-events-auto w-full max-w-[26rem] bg-navy/[0.93] p-6 sm:p-8">
         <p className="font-pixel text-[10px] uppercase tracking-wider" style={{ color: scene.accent }}>
           {scene.n} / {scene.title.split(" ")[0]}
         </p>
@@ -89,9 +99,9 @@ export function FeatureScenes({ onGetStarted }: { onGetStarted: () => void }) {
         <Card key={s.id} scene={s} />
       ))}
 
-      <section id="paths-scene" aria-labelledby="paths-title" className="relative z-10 mx-auto flex min-h-[100svh] w-[90%] max-w-[1280px] items-start justify-center pt-[16vh] md:justify-end">
-        <Reveal className="px-box w-full max-w-[30rem] bg-navy/85 p-6 sm:p-8">
-          <p className="font-pixel text-[10px] uppercase tracking-wider text-[#FF9DB5]">04 / Decide</p>
+      <section id="paths-scene" aria-labelledby="paths-title" className="pointer-events-none relative z-10 mx-auto flex min-h-[90svh] w-[90%] max-w-[1280px] items-start justify-center pt-[16vh] md:justify-end">
+        <Reveal className="px-box pointer-events-auto w-full max-w-[30rem] bg-navy/[0.93] p-6 sm:p-8">
+          <p className="font-pixel text-[10px] uppercase tracking-wider text-[#FF9DB5]">05 / Decide</p>
           <div className="mt-4 flex items-center gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center border-[3px] border-navy bg-[#FF9DB5] text-navy">
               <Signpost size={26} strokeWidth={2.5} aria-hidden="true" />
@@ -112,8 +122,8 @@ export function FeatureScenes({ onGetStarted }: { onGetStarted: () => void }) {
         </Reveal>
       </section>
 
-      <section id="cta" aria-labelledby="cta-title" className="relative z-10 mx-auto flex min-h-[100svh] w-[90%] max-w-[1280px] items-start justify-center pt-[16vh] md:justify-end">
-        <Reveal className="px-box w-full max-w-[26rem] bg-navy/85 p-6 text-center sm:p-8">
+      <section id="cta" aria-labelledby="cta-title" className="pointer-events-none relative z-10 mx-auto flex min-h-[90svh] w-[90%] max-w-[1280px] items-start justify-center pt-[16vh] md:justify-end">
+        <Reveal className="px-box pointer-events-auto w-full max-w-[26rem] bg-navy/[0.93] p-6 text-center sm:p-8">
           <h2 id="cta-title" className="text-[1.7rem] font-extrabold leading-tight text-soft">
             Same ideas. A clearer tomorrow.
           </h2>

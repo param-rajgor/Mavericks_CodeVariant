@@ -8,6 +8,7 @@ import { Button, Field } from './ui';
 import { IdeaSection, InterestSection, ProgressSection, StoppedSection } from './ProjectForm';
 import { useSafe, useToast } from './Toast';
 import { navigate } from '../lib/router';
+import { useShell } from './shellContext';
 
 interface Common {
   project: Project;
@@ -30,7 +31,7 @@ export function ArchiveDialog({ project, open, onClose }: Common) {
     const saved = await safe(() => actions.archive(project.id, note), 'Could not archive');
     setBusy(false);
     if (saved) {
-      toast.success('Archived with care', `"${project.name}" is in your archive. You can restore it any time.`);
+      toast.success(`${project.name} archived`, undefined, { label: 'Undo', run: () => void actions.restore(project.id, project.status === 'archived' ? 'stalled' : project.status).then(() => undefined, () => undefined) });
       onClose();
       navigate('/archive');
     }
@@ -62,9 +63,10 @@ export function ArchiveDialog({ project, open, onClose }: Common) {
 
 export function RestoreDialog({ project, open, onClose, onDone }: Common & { onDone?: () => void }) {
   const { actions } = useProjects();
+  const { openDetail } = useShell();
   const safe = useSafe();
   const toast = useToast();
-  const [status, setStatus] = useState<OpenStatus>(project.previousStatus ?? 'stalled');
+  const status: OpenStatus = project.previousStatus ?? 'active';
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
@@ -72,7 +74,7 @@ export function RestoreDialog({ project, open, onClose, onDone }: Common & { onD
     const saved = await safe(() => actions.restore(project.id, status), 'Could not restore');
     setBusy(false);
     if (saved) {
-      toast.success('Welcome back', `"${project.name}" is ${STATUS_META[status].label.toLowerCase()} again. Its history is intact.`);
+      toast.success(`${project.name} restored to ${STATUS_META[status].label}`, undefined, { label: 'View', run: () => openDetail(project.id) });
       onClose();
       onDone?.();
     }
@@ -82,31 +84,21 @@ export function RestoreDialog({ project, open, onClose, onDone }: Common & { onD
     <Dialog
       open={open}
       onClose={onClose}
-      title={`Restore “${project.name}”`}
-      description="Choose where it should stand now. Its history, assets and archive note are all preserved."
+      title={`Restore ${project.name}?`}
+      description={`It returns to ${STATUS_META[status].label} with its notes and assets. Nothing is lost.`}
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="gold" onClick={submit} disabled={busy}>
-            {busy ? 'Restoring…' : 'Restore project'}
+          <Button variant="mint" onClick={submit} disabled={busy} data-autofocus>
+            {busy ? 'Restoring…' : 'Restore'}
           </Button>
         </>
       }
     >
-      <Field label="Restore as">
-        {({ id }) => (
-          <select id={id} data-autofocus className="rl-input" value={status} onChange={(e) => setStatus(e.target.value as OpenStatus)}>
-            {OPEN_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_META[s].label}: {STATUS_META[s].definition}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
+      <p className="text-sm text-dim">You can change where it stands from the project details afterwards.</p>
     </Dialog>
   );
 }
@@ -125,7 +117,7 @@ export function DeleteDialog({ project, open, onClose, onDone }: Common & { onDo
     }, 'Could not delete');
     setBusy(false);
     if (ok) {
-      toast.success('Project deleted', `"${project.name}" was removed from this device.`);
+      toast.success(`${project.name} deleted`, 'It was removed from this device.');
       onClose();
       onDone?.();
     }
@@ -135,75 +127,21 @@ export function DeleteDialog({ project, open, onClose, onDone }: Common & { onDo
     <Dialog
       open={open}
       onClose={onClose}
-      title={`Permanently delete “${project.name}”?`}
-      description="This removes the project and its whole history from this device. It cannot be undone. If you only want it out of the way, archive it instead."
+      title={`Delete ${project.name} for good?`}
+      description="This cannot be undone. Archive keeps it safe instead."
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} data-autofocus>
             Keep it
           </Button>
-          <Button variant="rose" onClick={submit} disabled={busy}>
-            {busy ? 'Deleting…' : 'Delete permanently'}
+          <Button variant="rose-solid" onClick={submit} disabled={busy}>
+            {busy ? 'Deleting…' : 'Delete'}
           </Button>
         </>
       }
     >
-      <p className="text-sm text-muted">Tip: a backup from the “Your data” page keeps a copy you can restore later.</p>
-    </Dialog>
-  );
-}
-
-export function ProgressDialog({ project, open, onClose }: Common) {
-  const { actions } = useProjects();
-  const safe = useSafe();
-  const toast = useToast();
-  const [value, setValue] = useState(project.progress);
-  const [today, setToday] = useState(true);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (open) {
-      setValue(project.progress);
-      setToday(true);
-    }
-  }, [open, project.progress]);
-
-  const submit = async () => {
-    setBusy(true);
-    const saved = await safe(() => actions.setProgress(project.id, value, today), 'Could not update progress');
-    setBusy(false);
-    if (saved) {
-      toast.success('Progress updated', `${project.name} is at ${value}%.`);
-      onClose();
-    }
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      title="Update progress"
-      size="sm"
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="gold" onClick={submit} disabled={busy}>
-            {busy ? 'Saving…' : 'Save progress'}
-          </Button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <Field label={`Progress: ${value}%`}>
-          {({ id }) => <input id={id} data-autofocus type="range" min={0} max={100} step={5} value={value} onChange={(e) => setValue(Number(e.target.value))} className="h-11 w-full accent-twilight" />}
-        </Field>
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-bold">
-          <input type="checkbox" checked={today} onChange={(e) => setToday(e.target.checked)} className="size-4 accent-twilight" />
-          I worked on this today (updates freshness)
-        </label>
-      </div>
+      <p className="text-sm text-dim">Tip: a backup from the Settings page keeps a copy you can restore later.</p>
     </Dialog>
   );
 }
@@ -271,22 +209,22 @@ export function EditDialog({ project, open, onClose }: Common) {
     >
       <div className="space-y-8">
         <section aria-labelledby="e1" className="space-y-4">
-          <h3 id="e1" className="text-sm font-extrabold uppercase tracking-wide text-twilight">The idea</h3>
+          <h3 id="e1" className="text-sm font-extrabold uppercase tracking-wide text-gold">The idea</h3>
           <IdeaSection {...props} />
         </section>
         <section aria-labelledby="e2" className="space-y-4">
-          <h3 id="e2" className="text-sm font-extrabold uppercase tracking-wide text-twilight">Progress and assets</h3>
+          <h3 id="e2" className="text-sm font-extrabold uppercase tracking-wide text-gold">Progress and assets</h3>
           <ProgressSection {...props} />
         </section>
         <section aria-labelledby="e3" className="space-y-4">
-          <h3 id="e3" className="text-sm font-extrabold uppercase tracking-wide text-twilight">Why it stopped</h3>
+          <h3 id="e3" className="text-sm font-extrabold uppercase tracking-wide text-gold">Why it stopped</h3>
           <StoppedSection {...props} showStatus={!archived} />
         </section>
         <section aria-labelledby="e4" className="space-y-4">
-          <h3 id="e4" className="text-sm font-extrabold uppercase tracking-wide text-twilight">Current interest</h3>
+          <h3 id="e4" className="text-sm font-extrabold uppercase tracking-wide text-gold">Current interest</h3>
           <InterestSection {...props} />
         </section>
-        {hasErrors(errors) && <p role="alert" className="text-sm font-bold text-[#a23a0a]">Some fields above need attention.</p>}
+        {hasErrors(errors) && <p role="alert" className="text-sm font-bold text-rose">Some fields above need attention.</p>}
       </div>
     </Dialog>
   );

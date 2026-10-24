@@ -7,27 +7,26 @@ import { ToastProvider } from './components/Toast';
 import { AppShell } from './components/AppShell';
 import { Button, EmptyState, LinkButton, Spinner } from './components/ui';
 import { LandingPage } from './pages/LandingPage';
-import { OverviewPage } from './pages/OverviewPage';
-import { PortfolioPage } from './pages/PortfolioPage';
-import { LogProjectPage } from './pages/LogProjectPage';
-import { ProjectDetailPage } from './pages/ProjectDetailPage';
-import { DecisionPage } from './pages/DecisionPage';
-import { PathsPage } from './pages/PathsPage';
-import { TimelinePage } from './pages/TimelinePage';
+import { MyProjectsPage } from './pages/MyProjectsPage';
+import { GraveyardPage } from './pages/GraveyardPage';
+import { InsightsPage } from './pages/InsightsPage';
+import { DecisionHubPage } from './pages/DecisionHubPage';
 import { ArchivePage } from './pages/ArchivePage';
-import { DataPage } from './pages/DataPage';
+import { ProgressPage } from './pages/ProgressPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { Scenery } from './ui/Scenery';
 
 const TITLES: Record<string, string> = {
   landing: 'Relaunch — your ideas aren’t dead',
-  overview: 'Overview',
   projects: 'My Projects',
-  new: 'Log a project',
-  project: 'Project',
-  decision: 'Decision',
-  paths: 'Relaunch Paths',
-  timeline: 'Timeline',
+  new: 'My Projects',
+  project: 'My Projects',
+  graveyard: 'The Graveyard',
+  insights: 'Insights',
+  decision: 'Decision Hub',
   archive: 'Archive',
-  data: 'Your data',
+  progress: 'Your Progress',
+  settings: 'Settings',
   'not-found': 'Page not found',
 };
 
@@ -47,24 +46,24 @@ function Routes() {
     window.scrollTo({ top: 0 });
     requestAnimationFrame(() => (document.getElementById('page-title') ?? document.getElementById('main'))?.focus({ preventScroll: true }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.name, 'id' in route ? route.id : '']);
+  }, [route.name]);
 
   if (route.name === 'landing') return <LandingPage />;
 
   let page;
   switch (route.name) {
-    case 'overview': page = <OverviewPage />; break;
-    case 'projects': page = <PortfolioPage />; break;
-    case 'new': page = <LogProjectPage />; break;
-    case 'project': page = <ProjectDetailPage id={route.id} />; break;
-    case 'decision': page = <DecisionPage id={route.id} />; break;
-    case 'paths': page = <PathsPage />; break;
-    case 'timeline': page = <TimelinePage projectId={route.project} />; break;
+    case 'projects':
+    case 'new':
+    case 'project': page = <MyProjectsPage />; break;
+    case 'graveyard': page = <GraveyardPage />; break;
+    case 'insights': page = <InsightsPage />; break;
+    case 'decision': page = <DecisionHubPage />; break;
     case 'archive': page = <ArchivePage />; break;
-    case 'data': page = <DataPage />; break;
+    case 'progress': page = <ProgressPage />; break;
+    case 'settings': page = <SettingsPage />; break;
     default:
       page = (
-        <EmptyState icon={HardDriveDownload} title="That page does not exist" action={<LinkButton to="/app" variant="gold">Go home</LinkButton>}>
+        <EmptyState icon={HardDriveDownload} title="That page does not exist" action={<LinkButton to="/app" variant="gold">Back to My Projects</LinkButton>}>
           The link may be out of date. Your projects are safe.
         </EmptyState>
       );
@@ -72,7 +71,7 @@ function Routes() {
 
   return (
     <AppShell>
-      <motion.div key={location} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+      <motion.div key={route.name} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
         {page}
       </motion.div>
     </AppShell>
@@ -84,13 +83,15 @@ function Gate() {
   const { state, error, retry, continueWithoutSaving } = useProjects();
   if (state === 'loading')
     return (
-      <div className="grid min-h-screen place-items-center bg-night text-soft">
+      <div className="grid min-h-screen place-items-center text-soft">
+        <Scenery />
         <Spinner label="Opening your graveyard" />
       </div>
     );
   if (state === 'error')
     return (
-      <div className="grid min-h-screen place-items-center bg-soft p-6">
+      <div className="grid min-h-screen place-items-center p-6">
+        <Scenery />
         <div className="max-w-lg">
           <EmptyState
             icon={HardDriveDownload}

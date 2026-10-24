@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { OpenStatus, PathId, Project } from '../domain/types';
 import type { ProjectDraft } from '../domain/draft';
 import { archiveProject, choosePath, createProject, editProject, restoreProject, updateProgress } from '../domain/ops';
-import { demoProjects } from '../domain/seed';
+import { dedupeSamples, demoProjects, RETIRED_SAMPLE_IDS } from '../domain/seed';
 import { buildBackup, parseBackup } from '../domain/backup';
 import { draftToFields } from '../domain/draft';
 import { todayStr } from '../domain/dates';
@@ -65,6 +65,28 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
           all = demoProjects();
           await db.putProjects(all);
           await db.setMeta('seeded', true);
+          await db.setMeta('samplesV2', true);
+        }
+        // Swap out sample projects from earlier versions for the current set.
+        const retired = all.filter((p) => (RETIRED_SAMPLE_IDS as readonly string[]).includes(p.id));
+        if (retired.length) {
+          const fresh = demoProjects().filter((d) => !all.some((p) => p.id === d.id));
+          await Promise.all(retired.map((p) => db.deleteProject(p.id)));
+          await db.putProjects(fresh);
+          all = [...all.filter((p) => !retired.includes(p)), ...fresh];
+        }
+        // Samples grew from four to twelve: top up once for people who already had the first four.
+        if (all.some((p) => p.isDemo) && !(await db.getMeta<boolean>('samplesV2'))) {
+          const fresh = demoProjects().filter((d) => !all.some((p) => p.id === d.id));
+          if (fresh.length) await db.putProjects(fresh);
+          await db.setMeta('samplesV2', true);
+          all = [...all, ...fresh];
+        } else if (all.length > 0) await db.setMeta('samplesV2', true);
+        // Repair duplicated sample projects left behind by an earlier double-seeding bug.
+        const { keep, drop } = dedupeSamples(all);
+        if (drop.length) {
+          await Promise.all(drop.map((p) => db.deleteProject(p.id)));
+          all = keep;
         }
         if (!cancelled) {
           setProjects(all);
@@ -125,7 +147,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       loadSamples: async () => {
         const samples = demoProjects();
         if (!memRef.current) await db.putProjects(samples);
-        setProjects((prev) => [...samples, ...prev]);
+        setProjects((prev) => [...samples, ...prev.filter((p) => !samples.some((s) => s.id === p.id))]);
       },
       exportJson: () => JSON.stringify(buildBackup(projectsRef.current), null, 2),
       importJson: async (text) => {

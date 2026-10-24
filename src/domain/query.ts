@@ -11,6 +11,8 @@ export interface ProjectQuery {
   domain: string;
   tag: string;
   sort: SortKey;
+  /** Lets "all" include archived projects (the pixel UI counts them in All). */
+  includeArchived?: boolean;
 }
 
 export const DEFAULT_QUERY: ProjectQuery = { search: '', status: 'all', domain: '', tag: '', sort: 'last-worked' };
@@ -33,7 +35,7 @@ export function liveScore(p: Project, now: Date): number | null {
 export function queryProjects(projects: readonly Project[], q: ProjectQuery, now: Date = new Date()): Project[] {
   const needle = q.search.trim().toLowerCase();
   const rows = projects.filter((p) => {
-    if (q.status === 'all' ? p.status === 'archived' : p.status !== q.status) return false;
+    if (q.status === 'all' ? p.status === 'archived' && !q.includeArchived : p.status !== q.status) return false;
     if (q.domain && p.domain !== q.domain) return false;
     if (q.tag && !p.tags.some((t) => t.toLowerCase() === q.tag.toLowerCase())) return false;
     if (!needle) return true;
