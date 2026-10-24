@@ -51,19 +51,19 @@ export function DraggableReasonCard({ reason }: { reason: ReasonDef }) {
       {...attributes}
       data-draggable
       title={`Drag onto any project to add "${reason.label}"`}
-      className={`relative flex items-center justify-between gap-2 px-2.5 py-1.5 bg-[#1b1742] border-2 transition-all cursor-grab select-none ${
+      className={`relative flex items-center justify-between gap-1.5 px-2 py-1 bg-[#1b1742] border-2 transition-all cursor-grab select-none ${
         isDragging ? 'opacity-30 scale-95 border-dashed' : 'hover:-translate-x-0.5'
       }`}
       style={{ borderColor: `${reason.color}88` }}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-1.5 min-w-0">
         <GripVertical className="size-3 text-dim shrink-0" />
-        <Icon className="size-3.5 shrink-0" style={{ color: reason.color }} />
-        <span className="font-display text-xs tracking-wider text-cream truncate uppercase">
+        <Icon className="size-3 shrink-0" style={{ color: reason.color }} />
+        <span className="font-display text-[11px] tracking-wider text-cream truncate uppercase">
           {reason.shortLabel}
         </span>
       </div>
-      <span className="size-1.5 rounded-full" style={{ background: reason.color }} />
+      <span className="size-1.5 rounded-full shrink-0" style={{ background: reason.color }} />
     </div>
   );
 }
@@ -76,16 +76,16 @@ export const ReasonRack = memo(function ReasonRack({ className = '' }: { classNa
   return (
     <aside
       aria-label="Why it stalled? Draggable reasons"
-      className={`p-3 bg-[#161438]/95 border-2 border-twilight shadow-[0_6px_0_#14122e] flex flex-col gap-2 w-36 select-none ${className}`}
+      className={`p-2 bg-[#161438]/95 border-2 border-twilight shadow-[0_4px_0_#14122e] flex flex-col gap-1.5 w-32 select-none ${className}`}
     >
-      <div className="pb-1.5 border-b border-white/10">
+      <div className="pb-1 border-b border-white/10">
         <span className="font-display text-[11px] tracking-wider text-gold block uppercase leading-none">
           WHY IT STALLED?
         </span>
         <span className="text-[9px] text-dim block mt-0.5">Drag onto any stone</span>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
         {REASON_DEFS.map((r) => (
           <DraggableReasonCard key={r.id} reason={r} />
         ))}

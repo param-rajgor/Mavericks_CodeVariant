@@ -314,31 +314,31 @@ export function drawMountains(c: C, v: SceneVariant, only?: number) {
   });
 }
 
-function drawCastle(c: C) {
+function drawCastle(c: C, dx = 64, dy = -8) {
   const D = '#2B275A';
   const L = '#3A3472';
-  rect(c, 236, 100, 18, 18, D);
-  rect(c, 229, 95, 7, 23, D);
-  rect(c, 254, 97, 7, 21, D);
-  rect(c, 242, 90, 6, 10, D);
+  rect(c, 236 + dx, 100 + dy, 18, 18, D);
+  rect(c, 229 + dx, 95 + dy, 7, 23, D);
+  rect(c, 254 + dx, 97 + dy, 7, 21, D);
+  rect(c, 242 + dx, 90 + dy, 6, 10, D);
   const roof = (x0: number, w: number, yBase: number) => {
     for (let i = 0; w - i * 2 > 0; i++) rect(c, x0 + i, yBase - i, w - i * 2, 1, D);
   };
-  roof(229, 7, 94);
-  roof(254, 7, 96);
-  roof(242, 6, 89);
-  rect(c, 244, 81, 1, 6, D);
-  rect(c, 245, 81, 4, 3, '#B995FF');
-  for (let x = 236; x < 254; x += 2) px(c, x, 99, D);
-  rect(c, 229, 95, 1, 23, L);
-  rect(c, 236, 100, 1, 18, L);
+  roof(229 + dx, 7, 94 + dy);
+  roof(254 + dx, 7, 96 + dy);
+  roof(242 + dx, 6, 89 + dy);
+  rect(c, 244 + dx, 81 + dy, 1, 6, D);
+  rect(c, 245 + dx, 81 + dy, 4, 3, '#B995FF');
+  for (let x = 236; x < 254; x += 2) px(c, x + dx, 99 + dy, D);
+  rect(c, 229 + dx, 95 + dy, 1, 23, L);
+  rect(c, 236 + dx, 100 + dy, 1, 18, L);
   const windows: [number, number, number, number][] = [
-    [240, 104, 2, 2],
-    [247, 104, 2, 2],
-    [243, 110, 2, 3],
-    [231, 100, 1, 2],
-    [257, 102, 1, 2],
-    [244, 93, 2, 2],
+    [240 + dx, 104 + dy, 2, 2],
+    [247 + dx, 104 + dy, 2, 2],
+    [243 + dx, 110 + dy, 2, 3],
+    [231 + dx, 100 + dy, 1, 2],
+    [257 + dx, 102 + dy, 1, 2],
+    [244 + dx, 93 + dy, 2, 2],
   ];
   for (const [x, y, w, h] of windows) {
     for (let gy = y - 2; gy < y + h + 2; gy++) for (let gx = x - 2; gx < x + w + 2; gx++) if (dither(gx, gy, 0.25)) px(c, gx, gy, '#8A6A5A');

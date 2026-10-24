@@ -37,7 +37,7 @@ function useRowZoom() {
   // slack). Using the full window width made the row a few pixels too wide at ~1440px, and six stones wrapped
   // onto two lines, floating up over the heading.
   const row = PER_PAGE * STONE_W + (PER_PAGE - 1) * GAP;
-  return w >= 900 ? Math.min(1, (w - 48 - 16) / row) : Math.min(1, (w - 24) / (3 * STONE_W + 2 * GAP));
+  return w >= 900 ? Math.min(1, (w - 96 - 16) / row) : Math.min(1, (w - 24) / (3 * STONE_W + 2 * GAP));
 }
 
 /** A stone that is also a data card: drag it onto an Action Zone, click it to look, or drop a reason onto it. */
@@ -157,8 +157,8 @@ function Graveyard() {
       </div>
 
       <main id="main" style={{ position: 'relative', zIndex: 'var(--z-stones)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Why it stalled? Draggable Reason Rack (Phase 4) */}
-        <ReasonRack className="hidden lg:flex absolute left-8 top-32 z-20" />
+        {/* Why it stalled? Draggable Reason Rack (Phase 4) - positioned neatly top-left so it never overlaps stones */}
+        <ReasonRack className="hidden lg:flex absolute left-6 top-3 z-20" />
 
         <div style={{ padding: '28px 32px 0' }}>
           <div style={{ position: 'relative' }}>

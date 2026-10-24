@@ -13,13 +13,13 @@ export const SeedPacket = memo(function SeedPacket({ onClick, className = '' }: 
   const data: DragItem = useMemo(
     () => ({
       kind: 'seed',
-      label: 'Seed Packet',
+      label: '+ New Project (Seed)',
       preview: (
         <div className="p-3 bg-[#2a2456] border-4 border-mint shadow-[0_6px_0_#14122e] flex items-center gap-3">
           <PixelSprite sprite={SPROUT} px={3} />
           <div>
-            <span className="font-display text-xl text-mint block leading-tight">SEED PACKET</span>
-            <span className="text-[10px] text-cream block">Drop on Planting Plot</span>
+            <span className="font-display text-xl text-mint block leading-tight">+ NEW PROJECT</span>
+            <span className="text-[10px] text-cream block">Drop on Soil to Plant</span>
           </div>
         </div>
       ),
@@ -42,7 +42,7 @@ export const SeedPacket = memo(function SeedPacket({ onClick, className = '' }: 
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
-      title="Drag to planting plot or click to plant a project"
+      title="Drag to planting plot or click to add a new project"
       className={`relative inline-flex items-center gap-2.5 px-3 py-1.5 bg-[#25204d] border-2 border-mint/70 hover:border-mint shadow-[0_3px_0_#14122e] cursor-grab select-none transition-all ${
         isDragging ? 'opacity-30 scale-95' : 'hover:-translate-y-0.5'
       } ${className}`}
@@ -50,9 +50,9 @@ export const SeedPacket = memo(function SeedPacket({ onClick, className = '' }: 
       <GripVertical className="size-3.5 text-mint/60" />
       <PixelSprite sprite={SPROUT} px={2} />
       <div className="flex flex-col text-left">
-        <span className="font-display text-lg tracking-wider text-mint leading-none">+ SEED PACKET</span>
+        <span className="font-display text-lg tracking-wider text-mint leading-none">+ NEW PROJECT</span>
         <span className="text-[9px] font-display text-gold leading-none mt-0.5 uppercase tracking-wide">
-          DRAG TO SOW
+          DRAG TO PLANT
         </span>
       </div>
     </div>

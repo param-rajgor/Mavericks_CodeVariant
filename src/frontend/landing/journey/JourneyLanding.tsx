@@ -362,9 +362,6 @@ export function JourneyLanding({ stones, onEnter }: Props) {
 
           <div data-from={-1} data-to={0.065} data-fade={0.035} className="journey-hero" style={{ position: 'absolute', left: '2vw', top: '17vh' }}>
             <Hero onEnter={() => jump(0.09)} />
-            <button type="button" className="scroll-cue" onClick={() => jump(0.09)} style={{ marginLeft: 48, marginTop: 26 }}>
-              FOLLOW THE GHOST <span aria-hidden="true" className="cue-arrow">↓</span>
-            </button>
           </div>
           <div data-from={-1} data-to={0.04} data-fade={0.03} className="scroll-badge" aria-hidden="true">
             <span className="scroll-mouse"><i /></span>

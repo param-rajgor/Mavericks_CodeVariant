@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Project, SavedRepo } from '@/backend/domain/types';
-import { ExternalLink, Sparkles, CheckCircle2, Bookmark, EyeOff, Search } from 'lucide-react';
+import { ExternalLink, Sparkles, CheckCircle2, Bookmark, EyeOff, Search, Loader2 } from 'lucide-react';
 import { useProjects } from '@/backend/store/ProjectsContext';
 
-// Realistic sample repos based on domains & tags
+// Realistic sample fallback repos based on domains & tags
 const REPO_CATALOG: Record<string, Omit<SavedRepo, 'verdict'>[]> = {
   Software: [
     { id: 'sw-1', name: 'supabase/realtime', url: 'https://github.com/supabase/realtime', stars: 6200, description: 'Listen to your PostgreSQL database in real-time via websockets.' },
@@ -41,7 +41,13 @@ const DEFAULT_REPOS: Omit<SavedRepo, 'verdict'>[] = [
 
 export function LookAroundStep({ project }: { project: Project }) {
   const { actions } = useProjects();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => {
+    const cleanName = project.name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+    return cleanName || project.domain || 'developer tools';
+  });
+  const [loading, setLoading] = useState(false);
+  const [liveRepos, setLiveRepos] = useState<Omit<SavedRepo, 'verdict'>[]>([]);
+  const [isLive, setIsLive] = useState(false);
 
   // Initial evaluations from project or empty
   const [evals, setEvals] = useState<Record<string, 'solved' | 'inspiring' | 'irrelevant'>>(() => {
@@ -53,18 +59,55 @@ export function LookAroundStep({ project }: { project: Project }) {
   });
 
   const baseCatalog = REPO_CATALOG[project.domain] ?? DEFAULT_REPOS;
-  const filtered = useMemo(() => {
-    if (!query.trim()) return baseCatalog;
-    const q = query.toLowerCase();
-    return baseCatalog.filter((r) => r.name.toLowerCase().includes(q) || r.description.toLowerCase().includes(q));
-  }, [baseCatalog, query]);
+
+  const fetchGithubRepos = useCallback(async (q: string) => {
+    const term = q.trim();
+    if (!term) return;
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://api.github.com/search/repositories?q=${encodeURIComponent(term)}&sort=stars&order=desc&per_page=6`,
+        { headers: { Accept: 'application/vnd.github.v3+json' } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && data.items.length > 0) {
+          const mapped: Omit<SavedRepo, 'verdict'>[] = data.items.map((it: any) => ({
+            id: `gh-${it.id}`,
+            name: it.full_name,
+            url: it.html_url,
+            stars: it.stargazers_count,
+            description: it.description || 'Open-source repository on GitHub.',
+          }));
+          setLiveRepos(mapped);
+          setIsLive(true);
+          setLoading(false);
+          return;
+        }
+      }
+      setIsLive(false);
+    } catch {
+      setIsLive(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGithubRepos(query);
+  }, []);
+
+  const displayedRepos = useMemo(() => {
+    if (liveRepos.length > 0) return liveRepos;
+    return baseCatalog;
+  }, [liveRepos, baseCatalog]);
 
   const setVerdict = async (repo: Omit<SavedRepo, 'verdict'>, verdict: 'solved' | 'inspiring' | 'irrelevant') => {
     const updated = { ...evals, [repo.id]: verdict };
     setEvals(updated);
 
     // Save to project
-    const repoList: SavedRepo[] = baseCatalog
+    const repoList: SavedRepo[] = displayedRepos
       .filter((r) => updated[r.id])
       .map((r) => ({ ...r, verdict: updated[r.id]! }));
 
@@ -107,7 +150,7 @@ export function LookAroundStep({ project }: { project: Project }) {
             <Sparkles className="size-6 text-gold" />
             <div>
               <h3 className="font-display text-2xl text-soft leading-none">THE WORLD: GITHUB SIGNALS</h3>
-              <p className="text-sm text-dim mt-1">Review similar repos to determine market viability and capture inspiration.</p>
+              <p className="text-sm text-dim mt-1">Review live GitHub open-source repositories to validate market opportunity.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -134,22 +177,51 @@ export function LookAroundStep({ project }: { project: Project }) {
 
       {/* Repos List */}
       <div className="rl-panel p-6 border-[3px] border-twilight shadow-[0_6px_0_#14122e]">
-        <div className="flex items-center justify-between gap-4 mb-5">
-          <h4 className="font-display text-xl text-soft">SIMILAR OPEN SOURCE REPOSITORIES</h4>
-          <div className="relative w-64">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search related repos..."
-              className="w-full bg-[#151438] border-2 border-twilight px-3 py-1.5 text-sm text-cream pl-8 outline-none focus:border-gold"
-            />
-            <Search className="size-4 text-dim absolute left-2.5 top-1/2 -translate-y-1/2" />
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+          <div className="flex items-center gap-3">
+            <h4 className="font-display text-xl text-soft">REAL GITHUB REPOSITORIES</h4>
+            {isLive ? (
+              <span className="px-2 py-0.5 text-[11px] font-display text-mint border border-mint/40 bg-mint/10 flex items-center gap-1">
+                <span className="size-1.5 rounded-full bg-mint animate-pulse" />
+                LIVE GITHUB DATA
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 text-[11px] font-display text-lavender border border-lavender/40 bg-lavender/10">
+                CURATED CATALOG
+              </span>
+            )}
           </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              fetchGithubRepos(query);
+            }}
+            className="flex items-center gap-2"
+          >
+            <div className="relative w-64">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search real GitHub repos..."
+                className="w-full bg-[#151438] border-2 border-twilight px-3 py-1.5 text-sm text-cream pl-8 outline-none focus:border-gold"
+              />
+              <Search className="size-4 text-dim absolute left-2.5 top-1/2 -translate-y-1/2" />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-3 py-1.5 bg-[#251f4d] border-2 border-gold text-gold font-display text-xs uppercase hover:bg-gold hover:text-night transition-all disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {loading && <Loader2 className="size-3 animate-spin" />}
+              {loading ? 'Searching…' : 'Search GitHub'}
+            </button>
+          </form>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map((repo) => {
+          {displayedRepos.map((repo) => {
             const current = evals[repo.id];
             return (
               <div
@@ -169,13 +241,13 @@ export function LookAroundStep({ project }: { project: Project }) {
                       className="font-display text-lg text-gold hover:underline flex items-center gap-1.5"
                     >
                       <span>{repo.name}</span>
-                      <ExternalLink className="size-3.5 opacity-75" />
+                      <ExternalLink className="size-3.5 opacity-75 shrink-0" />
                     </a>
-                    <span className="num text-xs text-dim bg-night px-2 py-0.5 border border-twilight">
+                    <span className="num text-xs text-mint bg-night px-2 py-0.5 border border-twilight shrink-0 font-bold">
                       ★ {repo.stars.toLocaleString()}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs text-cream/90 leading-relaxed">{repo.description}</p>
+                  <p className="mt-2 text-xs text-cream/90 leading-relaxed line-clamp-2">{repo.description}</p>
                 </div>
 
                 {/* Feedback Chips */}

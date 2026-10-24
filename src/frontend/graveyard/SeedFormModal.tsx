@@ -127,8 +127,8 @@ function SeedFormContent({ onClose }: { onClose: () => void }) {
           <div className="flex items-center gap-2.5">
             <PixelSprite sprite={SPROUT} px={3} />
             <div>
-              <h3 className="font-display text-2xl text-soft leading-none">PLANT AN IDEA SEED</h3>
-              <p className="text-xs text-dim mt-0.5">Sow a new unfinished project directly into the graveyard.</p>
+              <h3 className="font-display text-2xl text-soft leading-none">PLANT A NEW PROJECT</h3>
+              <p className="text-xs text-dim mt-0.5">Add an unfinished idea or project directly into your graveyard.</p>
             </div>
           </div>
           <button

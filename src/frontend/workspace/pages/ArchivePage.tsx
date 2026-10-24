@@ -144,14 +144,15 @@ export function ArchivePage() {
         {/* Canvas Protocol Action Dock for Archive (Audit #10 & #11) */}
         <section
           aria-label="Archive Action Zones"
-          className="p-4 bg-[#141232]/95 border-2 border-lavender shadow-[0_5px_0_#0d0c1f]"
+          className="sticky top-2 z-30 p-4 bg-[#141232]/95 backdrop-blur-md border-2 border-lavender shadow-[0_6px_0_#0d0c1f]"
         >
-          <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
-            <span className="font-display text-sm text-gold uppercase tracking-wider">
-              CANVAS PROTOCOL · DRAG AN ARCHIVED CARD INTO AN ACTION ZONE
+          <div className="flex flex-wrap items-center justify-between pb-2 border-b border-white/10 mb-3 gap-2">
+            <span className="font-display text-sm text-gold uppercase tracking-wider flex items-center gap-2">
+              <span className="size-2 rounded-full bg-gold animate-pulse" />
+              THE CANVAS PROTOCOL · DRAG AN ARCHIVED CARD INTO AN ACTION ZONE
             </span>
-            <span className="text-xs text-mint font-display uppercase font-bold">
-              Action Zones Active
+            <span className="text-xs text-mint font-display uppercase font-bold tracking-wider">
+              {rows.length} Projects Resting
             </span>
           </div>
 
@@ -159,41 +160,48 @@ export function ArchivePage() {
             <DropZone
               id="zone-restore-archive"
               label="BRING BACK (RESTORE)"
-              description="Drag any card here to restore it to the active graveyard"
+              description="Drag any card here to restore it directly to the active graveyard"
               color="#9ce6bd"
               icon={SPROUT}
               accepts={(i) => i.kind === 'stone' && !!i.projectId}
               onDrop={handleRestore}
-              idleHint="Drop card to restore"
+              idleHint="Drop card here to restore"
               width="100%"
-              height={100}
+              height={90}
             />
 
             <DropZone
               id="zone-delete-archive"
               label="LET GO (DELETE)"
-              description="Drag any card here to let it go. Undo available for 5 seconds."
+              description="Drag any card here to permanently let go (5s instant undo toast)"
               color="#f6b9ab"
               icon={CHEST_ICON}
               accepts={(i) => i.kind === 'stone' && !!i.projectId}
               onDrop={handleDelete}
-              idleHint="Drop card to delete (5s undo)"
+              idleHint="Drop card here to delete"
               width="100%"
-              height={100}
+              height={90}
             />
           </div>
         </section>
 
-        <label className="notched mb-6 flex min-h-12 max-w-sm items-center gap-2 border-2 border-twilight bg-deep px-4">
-          <Search aria-hidden className="size-5 shrink-0 text-dim" />
-          <span className="sr-only">Search the archive</span>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search the archive..."
-            className="w-full bg-transparent text-base font-semibold text-soft outline-none placeholder:text-[#a99fd3]"
-          />
-        </label>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
+          <label className="notched flex min-h-12 max-w-sm flex-1 items-center gap-2 border-2 border-twilight bg-deep px-4">
+            <Search aria-hidden className="size-5 shrink-0 text-dim" />
+            <span className="sr-only">Search the archive</span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by project name or note..."
+              className="w-full bg-transparent text-base font-semibold text-soft outline-none placeholder:text-[#a99fd3]"
+            />
+          </label>
+          {search && (
+            <span className="font-display text-sm text-dim">
+              Found {rows.length} match{rows.length === 1 ? '' : 'es'}
+            </span>
+          )}
+        </div>
 
         {rows.length === 0 ? (
           <div className="max-w-xl">

@@ -79,9 +79,9 @@ function DialogBody({ onClose, title, description, children, footer, size = 'md'
   useModalBehavior(ref, true, onClose);
 
   return (
-    <div className="fixed inset-0 z-(--z-panel)flex items-end justify-center p-0 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <motion.div
-        className="absolute inset-0 bg-night/70"
+        className="fixed inset-0 bg-[#0e0d22]/85 backdrop-blur-[2px]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -96,7 +96,7 @@ function DialogBody({ onClose, title, description, children, footer, size = 'md'
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
-        className={`rl-panel relative flex max-h-[92svh] w-full flex-col ${WIDTH[size]} rounded-b-none sm:rounded-b-xl`}
+        className={`rl-panel relative flex max-h-[90vh] w-full flex-col ${WIDTH[size]} border-2 border-lavender shadow-[0_8px_0_#0d0c1f]`}
         initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 12, scale: 0.98 }}
