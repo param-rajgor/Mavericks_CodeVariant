@@ -176,28 +176,29 @@ export function ScrollVideoBackground() {
         Feathered mist panels hide them so the real HTML can take over. They live in this fixed layer so the
         baked text stays hidden in every section, not just the hero.
       */}
-      <div
-        className="absolute inset-x-0 top-0 h-[17%] min-h-[150px]"
-        style={{ background: "linear-gradient(to bottom, #17183E 0, #17183E 58%, rgba(23,24,62,.8) 78%, transparent 100%)" }}
-      />
-      <div
-        className="absolute left-0 top-[8%] hidden h-[54%] w-[66%] backdrop-blur-[10px] md:block"
-        style={{
-          background: "linear-gradient(90deg, rgba(23,24,62,.93), rgba(34,36,95,.9))",
-          WebkitMaskImage:
-            "linear-gradient(to right, #000 0, #000 84%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 14%, #000 84%, transparent 100%)",
-          maskImage:
-            "linear-gradient(to right, #000 0, #000 84%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 14%, #000 84%, transparent 100%)",
-          WebkitMaskComposite: "source-in",
-          maskComposite: "intersect",
-        }}
-      />
-      <div
-        className="absolute inset-x-0 bottom-0 h-[30%]"
-        style={{ background: "linear-gradient(to top, rgba(23,24,62,.94) 0, rgba(23,24,62,.94) 24%, rgba(23,24,62,.7) 58%, transparent 100%)" }}
-      />
-      {/* keeps foreground copy readable without overpowering the artwork */}
-      <div className="absolute inset-0 bg-gradient-to-b from-navy/30 via-transparent to-navy/40" />
+      {/* hides the text and stats baked into the video; the tree, sunset, mountains and tombstones stay crisp */}
+      <div className="absolute inset-0">
+        <div
+          className="absolute inset-x-0 top-0 h-[13%] min-h-[96px]"
+          style={{ background: "linear-gradient(to bottom, rgba(23,24,62,.97) 0, rgba(23,24,62,.9) 55%, transparent 100%)" }}
+        />
+        <div
+          className="absolute left-0 top-[8%] hidden h-[54%] w-[58%] md:block"
+          style={{
+            background: "linear-gradient(90deg, rgb(23,24,62) 0, rgb(28,30,80) 62%, rgba(28,30,80,.85) 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to right, #000 0, #000 82%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 16%, #000 80%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to right, #000 0, #000 82%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 16%, #000 80%, transparent 100%)",
+            WebkitMaskComposite: "source-in",
+            maskComposite: "intersect",
+          }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-[17%]"
+          style={{ background: "linear-gradient(to top, rgb(23,24,62) 0, rgb(23,24,62) 45%, transparent 100%)" }}
+        />
+      </div>
     </div>
   );
 }

@@ -8,9 +8,8 @@ import { PixelButton } from "./PixelButton";
 import { PixelRocket } from "./icons";
 
 const LINKS = [
-  { id: "paths", label: "How It Works" },
-  { id: "graveyard", label: "Explore" },
-  { id: "about", label: "About" },
+  { id: "features", label: "How It Works" },
+  { id: "paths-scene", label: "Explore" },
 ] as const;
 
 interface HeaderProps {
@@ -59,9 +58,6 @@ function MobileMenu({
               {l.label}
             </NavItem>
           ))}
-          <NavItem href="#/projects" large>
-            My Projects
-          </NavItem>
         </nav>
         <div className="mt-5 grid grid-cols-1 gap-4 pb-2">
           <PixelButton
@@ -104,12 +100,12 @@ export function Header({ onGetStarted }: HeaderProps) {
 
   // highlight the section currently in view
   useEffect(() => {
-    const ids = ["graveyard", "paths", "site-footer"];
+    const ids = ["features", "understand", "score", "paths-scene", "cta"];
     const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) setActive(e.target.id === "site-footer" ? "about" : e.target.id);
+          if (e.isIntersecting) setActive(["understand", "score"].includes(e.target.id) ? "features" : e.target.id === "cta" ? "" : e.target.id);
         });
       },
       { rootMargin: "-45% 0px -50% 0px" },
@@ -152,7 +148,6 @@ export function Header({ onGetStarted }: HeaderProps) {
               {l.label}
             </NavItem>
           ))}
-          <NavItem href="#/projects">My Projects</NavItem>
           <PixelButton variant="lavender" size="sm" accent="sparkle" onClick={onGetStarted}>
             Get Started
           </PixelButton>

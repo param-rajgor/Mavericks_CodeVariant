@@ -15,7 +15,7 @@ gsap.registerPlugin(ScrollTrigger);
  * ScrollVideoBackground lays feathered "mist" panels over those regions so the crisp,
  * real HTML here replaces them and the page reads as one world.
  */
-export function HeroSection() {
+export function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
   const root = useRef<HTMLElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
@@ -63,10 +63,10 @@ export function HeroSection() {
           </Reveal>
 
           <Reveal delay={0.4} className="mt-7 flex flex-col items-stretch gap-5 sm:flex-row sm:items-center">
-            <PixelButton variant="gold" size="lg" accent="arrow" href="#graveyard" onClick={(e) => { e.preventDefault(); scrollToId("graveyard"); }}>
+            <PixelButton variant="gold" size="lg" accent="arrow" onClick={onGetStarted}>
               Enter the graveyard
             </PixelButton>
-            <PixelButton variant="ghost" size="md" accent="sparkle" href="#paths" onClick={(e) => { e.preventDefault(); scrollToId("paths"); }}>
+            <PixelButton variant="ghost" size="md" accent="sparkle" href="#features" onClick={(e) => { e.preventDefault(); scrollToId("features"); }}>
               How It Works
             </PixelButton>
           </Reveal>
@@ -77,10 +77,10 @@ export function HeroSection() {
             Continue. Restart. Pivot. Repurpose. Or let go.
           </Reveal>
           <a
-            href="#graveyard"
+            href="#features"
             onClick={(e) => {
               e.preventDefault();
-              scrollToId("graveyard");
+              scrollToId("features");
             }}
             className="inline-flex min-h-[44px] items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-gold hover:text-cream"
           >
