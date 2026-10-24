@@ -89,14 +89,14 @@ const SCENES = [
 /** The same three scenes as plain, still text, for visitors who ask for reduced motion. */
 function StaticStory() {
   return (
-    <section aria-label="The story of Relaunch" style={{ maxWidth: 820, margin: '0 auto', padding: '56px 24px 72px', fontFamily: 'var(--font-ui)' }}>
+    <section aria-label="The story of Relaunch" style={{ maxWidth: 820, margin: '0 auto', padding: '56px 24px 72px', fontFamily: 'var(--font-body)' }}>
       {SCENES.map((sc, i) => (
         <div key={sc.title} style={{ marginBottom: 40 }}>
-          <p style={{ margin: 0, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 16, color: 'var(--color-gold)' }}>
+          <p style={{ margin: 0, fontFamily: 'var(--font-display)', letterSpacing: 2, textTransform: 'uppercase', fontSize: 26, color: 'var(--color-gold)' }}>
             Scene {i + 1} · {sc.title}
           </p>
           {sc.lines.map((l) => (
-            <p key={l} style={{ margin: '10px 0 0', fontWeight: 700, fontSize: 24, lineHeight: 1.4, color: 'var(--color-text-primary)' }}>
+            <p key={l} style={{ margin: '10px 0 0', fontSize: 22, lineHeight: 1.5, color: 'var(--color-text-primary)' }}>
               {l}
             </p>
           ))}

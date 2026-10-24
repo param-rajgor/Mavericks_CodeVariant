@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProjects } from '@/backend/store/ProjectsContext';
-import { queryProjects, type SortKey } from '@/backend/domain/query';
+import { queryProjects } from '@/backend/domain/query';
 import { useRoute } from '@/frontend/routing/router';
 import { NavBar } from '@/frontend/navigation/NavBar';
 import { Scene } from '@/frontend/scene/Scene';
 import { useChrome } from '@/frontend/shell/AppChrome';
 import { Heading } from './Heading';
-import { ProjectFoundPanel } from './ProjectFoundPanel';
-import { ControlBar } from './ControlBar';
+import { ProjectFoundSlot } from './ProjectFoundPanel';
+import { CONTROL_BAR_H, ControlBar } from './ControlBar';
 import { Gravestone } from './gravestone/Gravestone';
 import { matchesFilter, toStone, type FilterId, type Stone } from './stone';
 
@@ -25,8 +25,11 @@ function useRowZoom() {
     window.addEventListener('resize', on);
     return () => window.removeEventListener('resize', on);
   }, []);
-  const need = PER_PAGE * STONE_W + (PER_PAGE - 1) * GAP + 48;
-  return w >= 900 ? Math.min(1, w / need) : Math.min(1, (w - 24) / (3 * STONE_W + 2 * GAP));
+  // The row sits inside 24px side padding, so measure against the space actually left for it (plus a little
+  // slack). Using the full window width made the row a few pixels too wide at ~1440px, and six stones wrapped
+  // onto two lines, floating up over the heading.
+  const row = PER_PAGE * STONE_W + (PER_PAGE - 1) * GAP;
+  return w >= 900 ? Math.min(1, (w - 48 - 16) / row) : Math.min(1, (w - 24) / (3 * STONE_W + 2 * GAP));
 }
 
 export function GraveyardPage() {
@@ -36,12 +39,11 @@ export function GraveyardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(route.name === 'graveyard' ? (route.select ?? null) : null);
   const [filter, setFilter] = useState<FilterId>('all');
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<SortKey>('last-worked');
   const [page, setPage] = useState(0);
   const zoom = useRowZoom();
 
   // Every stone, in sort order; the filter and search only dim the ones that do not match.
-  const ordered = useMemo(() => queryProjects(projects, { search: '', status: 'all', domain: '', tag: '', sort, includeArchived: true }), [projects, sort]);
+  const ordered = useMemo(() => queryProjects(projects, { search: '', status: 'all', domain: '', tag: '', sort: 'last-worked', includeArchived: true }), [projects]);
   const stones = useMemo(() => ordered.map((p) => toStone(p)), [ordered]);
   const query = search.trim().toLowerCase();
   const matches = (s: Stone) => matchesFilter(s, filter) && (query === '' || s.name.toLowerCase().includes(query));
@@ -69,26 +71,21 @@ export function GraveyardPage() {
   const safePage = Math.min(page, pages - 1);
   const visible = stones.slice(safePage * PER_PAGE, safePage * PER_PAGE + PER_PAGE);
   const selected = stones.find((s) => s.id === selectedId) ?? null;
+  const closePanel = useCallback(() => setSelectedId(null), []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', paddingBottom: 110 }}>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', paddingBottom: CONTROL_BAR_H + 14 }}>
       <Scene variant="dashboard" />
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 'var(--z-bars)' }}>
         <NavBar variant="dashboard" />
       </div>
 
-      <main id="main" style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <main id="main" style={{ position: 'relative', zIndex: 'var(--z-stones)', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '28px 32px 0' }}>
           <div style={{ position: 'relative' }}>
             <Heading />
-            <AnimatePresence>
-              {selected && (
-                <div className="found-panel" style={{ position: 'absolute', top: 0, right: 0 }}>
-                  <ProjectFoundPanel project={selected} onInspect={() => openDetail(selected.id)} />
-                </div>
-              )}
-            </AnimatePresence>
+            <ProjectFoundSlot project={selected} onInspect={() => selected && openDetail(selected.id)} onClose={closePanel} />
           </div>
         </div>
 
@@ -103,7 +100,7 @@ export function GraveyardPage() {
             </div>
           ) : (
             <>
-              <ul style={{ zoom, display: 'flex', gap: GAP, flexWrap: 'wrap', justifyContent: 'center', listStyle: 'none', margin: 0, padding: 0 }}>
+              <ul style={{ zoom, display: 'flex', gap: GAP, flexWrap: window.innerWidth >= 900 ? 'nowrap' : 'wrap', justifyContent: 'center', listStyle: 'none', margin: 0, padding: 0 }}>
                 {visible.map((s, i) => {
                   const ok = matches(s);
                   return (
@@ -118,7 +115,8 @@ export function GraveyardPage() {
                         variant="dashboard"
                         layoutId={`stone-${s.id}`}
                         selected={selectedId === s.id}
-                        onClick={() => setSelectedId(s.id)}
+                        tooltip={!selected}
+                        onClick={() => setSelectedId((id) => (id === s.id ? null : s.id))}
                         onOpenProject={() => setSelectedId(s.id)}
                       />
                     </motion.li>
@@ -149,8 +147,6 @@ export function GraveyardPage() {
         onFilterChange={setFilter}
         search={search}
         onSearchChange={setSearch}
-        sort={sort}
-        onSortChange={setSort}
         onPlant={openNew}
       />
     </div>

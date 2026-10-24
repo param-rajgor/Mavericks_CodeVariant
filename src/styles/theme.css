@@ -5,7 +5,7 @@
    Source values: docs/design-spec.md §6 (colour), §7 (type), §8 (pixel rules).
    ========================================================================== */
 
-/* Tailwind utility names (bg-panel, text-gold, font-pixel ...) read from here. */
+/* Tailwind utility names (bg-panel, text-gold, font-display ...) read from here. */
 @theme {
   --color-night: #24234f;
   --color-navy: #24234f;
@@ -33,12 +33,44 @@
   --color-ink: #2e2560;
   --color-stone: #c3b5e6;
 
-  --font-sans: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-pixel: "Nunito", system-ui, sans-serif;
-  --font-title: "Pixelify Sans", ui-monospace, monospace;
+  /* The only two typefaces in the app. Display: headlines, names, buttons, pills, numbers.
+   * Body: descriptions and any sentence (Chakra Petch 500, 600 for emphasis). Also exposed as the
+   * Tailwind utilities `font-display` and `font-body`. */
+  --font-display: "Jersey 15", system-ui, sans-serif;
+  --font-body: "Chakra Petch", sans-serif;
+  /* Tailwind's base and code defaults point at the same two, so nothing falls back to another face. */
+  --default-font-family: var(--font-body);
+  --default-mono-font-family: var(--font-display);
+
+  /* Type scale, raised for the two pixel faces: body text never goes below 16px, and Jersey 15's small
+   * x-height needs larger display sizes than the old font. */
+  --text-xs: 1rem;
+  --text-sm: 1.0625rem;
+  --text-base: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.875rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+  --text-5xl: 3.5rem;
+  --text-6xl: 4.5rem;
 }
 
+/* Counts, scores and percentages: display face, even-width digits. */
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+/* A hard pixel shadow for any text that sits on the scene rather than on a panel. */
+.px-shadow { text-shadow: 0 3px 0 #14122e; }
+
 :root {
+  /* Layers: the only z-index values in the app. Popups are portalled to <body>, so these compare directly. */
+  --z-scene: 0;
+  --z-stones: 10;
+  --z-grass: 20;
+  --z-bars: 50;
+  --z-tooltip: 80;
+  --z-panel: 100;
+  --z-toast: 110;
+
   /* Backgrounds and sky */
   --color-night-indigo: #24234f;
   --color-panel-indigo: #2a2563;
@@ -86,10 +118,6 @@
   --color-grass-dark: #5e9143;
   --color-grass-deep: #4c7a3a;
 
-  /* Fonts (plain variables, used by the scene and landing components) */
-  --font-heading: "Pixelify Sans", ui-monospace, monospace;
-  --font-display: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-ui: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* Every sprite, notch and shadow is a multiple of this. */
   --pixel-unit: 4px;
@@ -101,10 +129,17 @@
 html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
+/* Only real weights: Jersey 15 has one, Chakra Petch is loaded at 500 and 600. Never fake a bold or italic;
+ * a heavier request resolves to the nearest real weight instead. */
+html { font-synthesis: none; }
+
 body {
   background: var(--color-night-indigo);
   color: var(--color-text-primary);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 1.125rem;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -114,6 +149,8 @@ img, canvas, svg.pixel-art { image-rendering: pixelated; image-rendering: crisp-
 
 /* Visible focus everywhere, in the interaction gold. */
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* Headings receive focus after navigation so screen readers announce the page; they aren't controls, so no box. */
+[tabindex="-1"]:focus { outline: none; }
 ::selection { background: var(--color-lavender); color: var(--color-text-dark); }
 .scrollbar-thin { scrollbar-width: thin; scrollbar-color: var(--color-mid-purple) transparent; }
 
@@ -181,10 +218,9 @@ img, canvas, svg.pixel-art { image-rendering: pixelated; image-rendering: crisp-
   background: var(--color-lavender);
   color: var(--color-text-dark);
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1rem;
-  line-height: 1.1;
-  letter-spacing: 0.01em;
+  font-size: 1.625rem;
+  line-height: 1;
+  letter-spacing: 1px;
   text-decoration: none;
   white-space: nowrap;
   box-shadow: -4px 0 0 0 var(--bc), 4px 0 0 0 var(--bc), 0 -4px 0 0 var(--bc), 0 4px 0 0 var(--bc), 0 8px 0 0 var(--sh);
@@ -206,7 +242,7 @@ img, canvas, svg.pixel-art { image-rendering: pixelated; image-rendering: crisp-
 .rl-btn-ghost { background: var(--color-panel-indigo); color: var(--color-text-primary); --bc: var(--color-lavender); }
 .rl-btn-rose { background: var(--color-night-indigo); color: var(--color-soft-pink); --bc: var(--color-soft-pink); }
 .rl-btn-rose-solid { background: var(--color-soft-pink); --bc: var(--status-stalled-border); }
-.rl-btn-sm { min-height: 38px; padding: 0.35rem 0.8rem; font-size: 0.875rem; }
+.rl-btn-sm { min-height: 40px; padding: 0.3rem 0.85rem; font-size: 1.375rem; }
 
 /* Inputs */
 .rl-input {
@@ -217,8 +253,8 @@ img, canvas, svg.pixel-art { image-rendering: pixelated; image-rendering: crisp-
   color: var(--color-text-primary);
   border: 2px solid var(--color-mid-purple);
   font: inherit;
-  font-size: 1rem;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
 }
 .rl-input::placeholder { color: #a99fd3; }
 .rl-input:focus { border-color: var(--color-gold); outline: none; }
@@ -230,9 +266,9 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.15rem 0.55rem;
-  font-size: 0.8rem;
-  font-weight: 700;
+  padding: 0.15rem 0.6rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
   background: transparent;
   color: var(--color-text-secondary);
   border: 1px solid var(--color-lavender);
@@ -244,8 +280,9 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
   gap: 0.5rem;
   min-height: 40px;
   padding: 0 1rem;
-  font-weight: 800;
-  font-size: 0.875rem;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  letter-spacing: 1px;
   background: transparent;
   color: var(--color-text-secondary);
   border: 2px solid var(--color-stone-outline);
@@ -258,9 +295,10 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
 .rl-status {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.8rem;
-  font-weight: 800;
+  padding: 0.2rem 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  letter-spacing: 1px;
   line-height: 1;
   border: 2px solid var(--color-stone-outline);
   white-space: nowrap;
@@ -268,20 +306,19 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
 
 /* Headings and small caps */
 .rl-title {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  line-height: 1.1;
+  font-family: var(--font-display);
+  line-height: 1;
+  letter-spacing: 1px;
   color: var(--color-text-primary);
   text-shadow: 2px 2px 0 var(--color-stone-outline), -2px -2px 0 var(--color-stone-outline), 2px -2px 0 var(--color-stone-outline), -2px 2px 0 var(--color-stone-outline), 4px 4px 0 var(--color-stone-outline);
 }
 .pixel-label {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
+  font-size: 1.375rem;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
-.rl-meta { font-size: 0.78rem; font-weight: 700; color: var(--color-text-secondary); }
+.rl-meta { font-family: var(--font-body); font-size: 1rem; color: var(--color-text-secondary); }
 
 /* ==========================================================================
    Ambient scene motion. Lengths use --s (screen px per art px) from the scene Stage.
@@ -319,12 +356,13 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
   }
 }
 
-.rl-btn-lg { min-height: 56px; padding: 0.8rem 1.6rem; font-size: 1.15rem; }
+.rl-btn-lg { min-height: 58px; padding: 0.75rem 1.6rem; font-size: 1.875rem; }
 
 /* Navigation: tabs keep their labels on wide screens and shrink to icons on narrow ones. */
 .nav-tab:hover { background: var(--color-panel-2); color: var(--color-text-primary); }
 .nav-tab[aria-current="page"]:hover { background: var(--color-lavender); color: var(--color-text-dark); }
-@media (max-width: 1180px) { .nav-extra { display: none !important; } }
+@media (max-width: 1699px) { .nav-count { display: none !important; } }
+@media (max-width: 1379px) { .nav-extra { display: none !important; } }
 @media (max-width: 900px) { .nav-divider { display: none; } .landing-links { display: none !important; } }
 
 /* Small screens: the tabs drop to their own row, and the landing bar keeps only what fits. */
@@ -333,6 +371,8 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
   .nav-tabs { order: 3; flex: 1 1 100%; }
   .landing-login { display: none; }
 }
+/* The graveyard's bottom bar is one row; only on narrow screens may it wrap. */
+@media (max-width: 899px) { .control-bar { height: auto !important; flex-wrap: wrap; padding: 10px 16px !important; } }
 @media (max-width: 1100px) { .found-panel { position: static !important; display: flex; justify-content: center; margin-top: 16px; } }
 
 /* ==========================================================================
@@ -375,8 +415,8 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
   background: var(--color-night-indigo);
   color: var(--color-gold);
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(16px, 1.3vw, 22px);
+  font-size: clamp(24px, 1.6vw, 30px);
+  letter-spacing: 2px;
   letter-spacing: 0.06em;
   animation: cue-glow 1.8s ease-in-out infinite;
 }
@@ -393,11 +433,11 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
   box-shadow: -4px 0 0 0 var(--color-lavender), 4px 0 0 0 var(--color-lavender), 0 -4px 0 0 var(--color-lavender), 0 4px 0 0 var(--color-lavender), 0 8px 0 0 #14123a;
   margin: 4px;
 }
-.journey-kicker { margin: 0 0 8px; font-family: var(--font-display); font-weight: 900; font-size: clamp(14px, 1.1vw, 18px); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-gold); }
-.journey-line { margin: 0; font-family: var(--font-ui); font-weight: 800; font-size: clamp(24px, 2.5vw, 42px); line-height: 1.2; color: var(--color-text-primary); }
-.journey-sub { margin: 10px 0 0; font-family: var(--font-ui); font-weight: 700; font-size: clamp(17px, 1.45vw, 24px); line-height: 1.4; color: var(--color-text-secondary); }
+.journey-kicker { margin: 0 0 8px; font-family: var(--font-display); font-size: clamp(22px, 1.5vw, 28px); letter-spacing: 2px; text-transform: uppercase; color: var(--color-gold); }
+.journey-line { margin: 0; font-family: var(--font-body); font-size: clamp(24px, 2.3vw, 40px); line-height: 1.3; color: var(--color-text-primary); }
+.journey-sub { margin: 10px 0 0; font-family: var(--font-body); font-size: clamp(18px, 1.35vw, 22px); line-height: 1.5; color: var(--color-text-secondary); }
 .journey-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
-.journey-list li { padding: 5px 12px; font-family: var(--font-ui); font-weight: 800; font-size: clamp(14px, 1.1vw, 18px); color: var(--color-text-dark); background: var(--color-lavender); border: 2px solid var(--color-stone-outline); }
+.journey-list li { padding: 4px 12px; font-family: var(--font-display); font-size: clamp(22px, 1.4vw, 24px); letter-spacing: 1px; color: var(--color-text-dark); background: var(--color-lavender); border: 2px solid var(--color-stone-outline); }
 
 .journey-path-line { position: absolute; left: 50%; bottom: 6vh; width: min(720px, 94vw); height: 0; transform: translateX(-50%); }
 .journey-path-box {
@@ -409,20 +449,30 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
   background: rgba(30, 28, 72, 0.9);
   border: 4px solid;
   box-shadow: 0 8px 0 #14123a;
-  font-family: var(--font-ui);
-  font-weight: 800;
-  font-size: clamp(22px, 2.3vw, 38px);
+  font-family: var(--font-body);
+  font-size: clamp(20px, 1.9vw, 32px);
   line-height: 1.25;
   text-align: center;
   color: var(--color-text-primary);
 }
-.journey-path-name { display: inline-block; margin-right: 14px; padding: 2px 12px; font-family: var(--font-display); font-weight: 900; font-size: 0.62em; letter-spacing: 0.08em; color: var(--color-text-dark); vertical-align: middle; }
+.journey-path-name { display: inline-block; margin-right: 14px; padding: 2px 12px; font-family: var(--font-display); font-size: 1.05em; letter-spacing: 2px; color: var(--color-text-dark); vertical-align: middle; }
 
-.journey-finale { left: 2vw; top: 15vh; width: min(760px, 94vw); padding-left: 4px; }
-.journey-link { min-height: 44px; padding: 0; background: none; border: 0; border-bottom: 4px solid var(--color-gold); color: var(--color-text-primary); font-family: var(--font-display); font-weight: 900; font-size: clamp(15px, 1.2vw, 20px); letter-spacing: 0.06em; text-shadow: 0 2px 0 #1e1c48, 2px 0 0 #1e1c48, -2px 0 0 #1e1c48; }
+/* Same dark panel as the captions: on the bright dawn sky, outlined white text turned to mush. */
+.journey-finale {
+  left: 2vw;
+  top: 15vh;
+  width: min(760px, 94vw);
+  padding: 24px 28px 26px;
+  background: rgba(30, 28, 72, 0.88);
+  box-shadow: -4px 0 0 0 var(--color-lavender), 4px 0 0 0 var(--color-lavender), 0 -4px 0 0 var(--color-lavender), 0 4px 0 0 var(--color-lavender), 0 8px 0 0 #14123a;
+  margin: 4px;
+}
+.journey-finale .journey-link { text-shadow: none; }
+.journey-link { min-height: 44px; padding: 0; background: none; border: 0; border-bottom: 4px solid var(--color-gold); color: var(--color-text-primary); font-family: var(--font-display); font-size: clamp(24px, 1.6vw, 30px); letter-spacing: 2px; text-shadow: 0 2px 0 #1e1c48, 2px 0 0 #1e1c48, -2px 0 0 #1e1c48; }
 .journey-link:hover { color: var(--color-gold); }
 
-.journey-dots { position: absolute; right: 10px; top: 50%; display: flex; flex-direction: column; gap: 2px; transform: translateY(-50%); pointer-events: auto; }
+/* Kept above the band where the signposts stand (art y ~107–150), so a dot never covers sign text. */
+.journey-dots { position: absolute; right: 10px; top: 34%; display: flex; flex-direction: column; gap: 2px; transform: translateY(-50%); pointer-events: auto; }
 .journey-dots button { display: grid; width: 36px; height: 36px; place-items: center; background: none; border: 0; }
 .journey-dots span { display: block; width: 14px; height: 14px; background: rgba(248, 243, 255, 0.5); box-shadow: 0 0 0 2px var(--color-night-indigo); }
 .journey-dots button[data-on="1"] span { background: var(--color-gold); box-shadow: 0 0 0 2px var(--color-night-indigo), 0 0 12px var(--color-gold); }
@@ -438,7 +488,7 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
 }
 
 .journey-caption[data-from="0.685"] { width: min(470px, 92vw); }
-.journey-finale .journey-sub { color: var(--color-text-primary); font-weight: 800; text-shadow: 0 2px 0 #1e1c48, 2px 0 0 #1e1c48, -2px 0 0 #1e1c48, 0 -2px 0 #1e1c48; }
+.journey-finale .journey-sub { color: var(--color-text-primary); }
 
 @media (max-width: 700px) {
   .journey-hero > div:first-child { max-width: 92vw !important; padding-left: 16px !important; }
@@ -448,7 +498,8 @@ select.rl-input option { background: var(--color-deep-panel); color: var(--color
 
 /* "Scroll to see the story" badge, bottom right of the first screen */
 @keyframes mouse-wheel { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(14px); opacity: 0; } }
-.scroll-badge { position: absolute; right: 2.4vw; bottom: 17vh; display: flex; align-items: center; gap: 14px; padding: 12px 18px; background: rgba(30, 28, 72, 0.88); box-shadow: -4px 0 0 0 var(--color-gold), 4px 0 0 0 var(--color-gold), 0 -4px 0 0 var(--color-gold), 0 4px 0 0 var(--color-gold), 0 8px 0 0 #14123a; margin: 4px; font-family: var(--font-ui); font-weight: 900; font-size: clamp(14px, 1.15vw, 19px); line-height: 1.25; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-gold); }
+/* Top-right under the nav: at bottom: 17vh it sat on top of the stone row. */
+.scroll-badge { position: absolute; right: 2.4vw; top: 92px; display: flex; align-items: center; gap: 14px; padding: 12px 18px; background: rgba(30, 28, 72, 0.88); box-shadow: -4px 0 0 0 var(--color-gold), 4px 0 0 0 var(--color-gold), 0 -4px 0 0 var(--color-gold), 0 4px 0 0 var(--color-gold), 0 8px 0 0 #14123a; margin: 4px; font-family: var(--font-display); font-size: clamp(22px, 1.4vw, 26px); line-height: 1.1; letter-spacing: 2px; text-transform: uppercase; color: var(--color-gold); }
 .scroll-mouse { position: relative; flex: none; width: 26px; height: 42px; border: 3px solid var(--color-gold); border-radius: 14px; }
 .scroll-mouse i { position: absolute; left: 50%; top: 7px; width: 4px; height: 8px; margin-left: -2px; background: var(--color-gold); animation: mouse-wheel 1.2s ease-out infinite; }
 @media (max-width: 700px) { .scroll-badge { display: none; } }

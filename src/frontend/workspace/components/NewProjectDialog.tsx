@@ -226,7 +226,7 @@ export function NewProjectDialog({ open, onClose }: { open: boolean; onClose: ()
                     : 'Add progress and a reason to see a score.'}
               </p>
             </div>
-            <span className="font-pixel text-2xl text-gold" aria-label={analysis.total == null ? 'No score yet' : `Score ${analysis.total}${analysis.status === 'provisional' ? ', provisional' : ''}`}>
+            <span className="font-display text-2xl text-gold" aria-label={analysis.total == null ? 'No score yet' : `Score ${analysis.total}${analysis.status === 'provisional' ? ', provisional' : ''}`}>
               {analysis.total == null ? '—' : `${analysis.total}${analysis.status === 'provisional' ? '*' : ''}`}
             </span>
           </div>

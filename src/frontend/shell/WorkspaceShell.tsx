@@ -12,11 +12,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const { memoryOnly } = useProjects();
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
-      <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+      <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-scene)' }}>
         <Scene variant="dashboard" />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(30,28,72,0.5), rgba(30,28,72,0.78))' }} />
       </div>
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 'var(--z-stones)' }}>
         <NavBar variant="dashboard" />
         {memoryOnly && (
           <div role="alert" style={{ margin: '12px 28px 0', padding: '10px 16px', border: '2px solid var(--color-gold)', background: '#3a2f1a', color: 'var(--color-gold)', fontWeight: 800 }}>

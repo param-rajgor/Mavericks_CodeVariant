@@ -173,11 +173,11 @@ export function PageHeader({ title, subtitle, actions, eyebrow }: { title: strin
     <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         {eyebrow && <p className="pixel-label mb-2 text-gold">{eyebrow}</p>}
-        <h1 id="page-title" tabIndex={-1} className="rl-title text-[2.6rem] outline-none sm:text-[3.4rem]">
+        <h1 id="page-title" tabIndex={-1} className="rl-title text-[3.25rem] outline-none sm:text-[4.5rem]">
           {title}
         </h1>
         {subtitle && (
-          <p className="notched mt-4 inline-flex max-w-2xl items-center gap-3 border-2 border-lavender bg-panel px-5 py-2.5 text-[1.05rem] font-semibold text-dim">
+          <p className="notched mt-4 inline-flex max-w-2xl items-center gap-3 border-2 border-lavender bg-panel px-5 py-2.5 text-lg font-semibold text-dim">
             <span aria-hidden className="size-2 shrink-0 rotate-45 bg-lavender" />
             {subtitle}
           </p>

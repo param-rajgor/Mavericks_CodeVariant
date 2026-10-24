@@ -12,10 +12,10 @@ export function Hero({ onEnter }: { onEnter: () => void }) {
         />
         <h1
           style={{
-            fontFamily: 'var(--font-heading)',
-            fontWeight: 700,
-            fontSize: 'clamp(40px, 4.7vw, 88px)',
-            lineHeight: 1.08,
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(56px, 5.75vw, 110px)',
+            lineHeight: 0.92,
+            letterSpacing: 2,
             color: 'var(--color-text-primary)',
             textShadow: pixelOutline('var(--color-stone-outline)', 2, 6),
             margin: 0,
@@ -36,13 +36,16 @@ export function Hero({ onEnter }: { onEnter: () => void }) {
       </div>
       <p
         style={{
-          fontFamily: 'var(--font-ui)',
-          fontWeight: 700,
-          lineHeight: 1.35,
-          fontSize: 'clamp(19px, 1.7vw, 30px)',
+          display: 'inline-block',
+          fontFamily: 'var(--font-body)',
+          fontWeight: 600,
+          lineHeight: 1.45,
+          fontSize: 'clamp(20px, 1.35vw, 26px)',
           color: 'var(--color-text-primary)',
-          textShadow: pixelOutline('rgba(30,28,72,0.85)', 1, 2),
-          marginTop: 16,
+          background: 'rgba(30, 28, 72, 0.88)',
+          padding: '12px 20px 14px',
+          margin: '22px 4px 0',
+          boxShadow: '-4px 0 0 0 var(--color-lavender), 4px 0 0 0 var(--color-lavender), 0 -4px 0 0 var(--color-lavender), 0 4px 0 0 var(--color-lavender), 0 8px 0 0 #14123a',
         }}
       >
         They&rsquo;re just waiting for their
@@ -50,7 +53,7 @@ export function Hero({ onEnter }: { onEnter: () => void }) {
         next chapter.
       </p>
       <div style={{ marginTop: 28 }}>
-        <PixelButton variant="gold" size="lg" onClick={onEnter} style={{ fontSize: 'clamp(17px, 1.65vw, 30px)', padding: '0.9em 1.6em' }}>
+        <PixelButton variant="gold" size="lg" onClick={onEnter} style={{ fontSize: 'clamp(24px, 1.6vw, 30px)', letterSpacing: 2, padding: '0.7em 1.4em' }}>
           ENTER THE GRAVEYARD →
         </PixelButton>
       </div>

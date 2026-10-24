@@ -21,11 +21,11 @@ export function ProjectRow({ project, onOpen }: { project: Project; onOpen: (id:
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-3">
-          <span className="font-pixel text-2xl font-bold leading-tight text-soft [overflow-wrap:anywhere]">{s.name}</span>
+          <span className="font-display text-2xl font-bold leading-tight text-soft [overflow-wrap:anywhere]">{s.name}</span>
           <StatusPill status={s.status} />
         </span>
-        <span className="mt-1 block text-[1.05rem] text-dim">{s.description}</span>
-        <span className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.95rem] font-bold text-dim">
+        <span className="mt-1 block text-lg text-dim">{s.description}</span>
+        <span className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-lg font-bold text-dim">
           <span>Last visited {s.lastVisited}</span>
           <span className="flex items-center gap-2">
             <span className="h-3 w-28 border-2 border-[#3a2f6e] bg-night" aria-hidden="true">

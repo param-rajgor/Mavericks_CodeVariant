@@ -11,7 +11,7 @@ function Brand({ to }: { to: string }) {
     <Link
       to={to}
       aria-label="Relaunch, back to the landing page"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 24, color: 'var(--color-text-primary)', textDecoration: 'none' }}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 12, flexShrink: 0, fontFamily: 'var(--font-display)', fontSize: 44, lineHeight: 1, letterSpacing: 2, color: '#FFFFFF', textShadow: '0 3px 0 #14122E', textDecoration: 'none' }}
     >
       <PixelSprite sprite={ROCKET} px={3} />
       RELAUNCH
@@ -44,17 +44,17 @@ const barStyle: CSSProperties = {
   padding: '14px 28px',
   background: 'var(--color-night-indigo)',
   borderBottom: '2px solid var(--color-lavender)',
-  fontFamily: 'var(--font-ui)',
+  fontFamily: 'var(--font-display)',
 };
 
 const pillBase: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: 8,
-  padding: '8px 14px',
-  fontFamily: 'var(--font-ui)',
-  fontWeight: 800,
-  fontSize: 15,
+  padding: '6px 14px',
+  fontFamily: 'var(--font-display)',
+  fontSize: 22,
+  letterSpacing: 1,
   border: '2px solid var(--color-lavender)',
   color: 'var(--color-text-primary)',
   textDecoration: 'none',
@@ -75,11 +75,11 @@ export function NavBar({ variant, onLogin, onGetStarted, onHow, onExplore }: Nav
   const { projects } = useProjects();
 
   if (variant === 'landing') {
-    // Sits directly on the sky: no solid bar, no border line.
+    // A see-through dark band, so the links stay readable over the clouds.
     return (
-      <nav aria-label="Main" style={{ ...barStyle, background: 'transparent', borderBottom: 'none', padding: '18px 36px' }}>
+      <nav aria-label="Main" style={{ ...barStyle, background: 'rgba(20, 18, 46, 0.55)', borderBottom: '1px solid var(--color-lavender)', padding: '12px 36px' }}>
         <Brand to="/" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: 'var(--color-text-secondary)' }} className="landing-links">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontFamily: 'var(--font-display)', fontSize: 28, letterSpacing: 1, color: '#FFFFFF', textShadow: '0 3px 0 #14122E' }} className="landing-links">
           <Link
             to="/progress"
             onClick={onHow ? (e) => { e.preventDefault(); onHow(); } : undefined}
@@ -110,7 +110,7 @@ export function NavBar({ variant, onLogin, onGetStarted, onHow, onExplore }: Nav
 
   const j = journeyOf(projects);
   return (
-    <nav aria-label="Main" style={{ ...barStyle, position: 'sticky', top: 0, zIndex: 30 }}>
+    <nav aria-label="Main" style={{ ...barStyle, position: 'sticky', top: 0, zIndex: 'var(--z-bars)' }}>
       <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
         <Brand to="/" />
         <span aria-hidden="true" className="nav-divider" style={{ width: 2, height: 28, background: 'var(--color-stone-outline)' }} />
@@ -127,10 +127,10 @@ export function NavBar({ variant, onLogin, onGetStarted, onHow, onExplore }: Nav
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '9px 14px',
-                  fontFamily: 'var(--font-ui)',
-                  fontWeight: 800,
-                  fontSize: 16,
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 24,
+                  letterSpacing: 1,
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
                   background: active ? 'var(--color-lavender)' : 'transparent',
@@ -149,7 +149,7 @@ export function NavBar({ variant, onLogin, onGetStarted, onHow, onExplore }: Nav
         <Link to="/progress" className="notched nav-extra" style={pillBase} aria-label={`Level ${j.level}, ${j.done} of 5 steps. Open your progress.`}>
           LEVEL {j.level} · {j.done}/5
         </Link>
-        <span className="notched nav-extra" style={pillBase}>
+        <span className="notched nav-count" style={pillBase}>
           <Sprout size={16} style={{ color: 'var(--color-mint)' }} aria-hidden="true" />
           {projects.length} ideas resting
         </span>

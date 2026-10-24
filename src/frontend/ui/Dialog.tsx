@@ -79,7 +79,7 @@ function DialogBody({ onClose, title, description, children, footer, size = 'md'
   useModalBehavior(ref, true, onClose);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-(--z-panel)flex items-end justify-center p-0 sm:items-center sm:p-4">
       <motion.div
         className="absolute inset-0 bg-night/70"
         initial={{ opacity: 0 }}

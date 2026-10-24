@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight } from 'lucide-react';
 import { PixelButton } from '@/frontend/ui/PixelButton';
@@ -7,21 +8,54 @@ import { StatusPill } from './StatusPill';
 interface TooltipProps {
   project: Project;
   variant: 'landing' | 'dashboard';
+  /** The stone it points at. The tooltip lives in <body>, so it follows this element's on-screen box. */
+  anchor: RefObject<HTMLElement | null>;
   onOpen?: () => void;
 }
+
+const WIDTH = 320;
+const EDGE = 12;
+const GAP = 22;
 
 /**
  * The speech bubble above a gravestone: a cream bubble on the landing page, a dark panel with an
  * "Open project" button on the dashboard. Large, high-contrast type so it reads at a glance.
+ * Rendered into a portal (see Gravestone), so no scene layer or stone can ever paint over it.
  */
-export function GravestoneTooltip({ project, variant, onOpen }: TooltipProps) {
+export function GravestoneTooltip({ project, variant, anchor, onOpen }: TooltipProps) {
   const isLanding = variant === 'landing';
   const fill = isLanding ? '#fff7e6' : 'var(--color-deep-panel)';
   const border = isLanding ? 'var(--color-stone-outline)' : 'var(--color-lavender)';
   const text = isLanding ? 'var(--color-text-dark)' : 'var(--color-text-primary)';
+  const box = useRef<HTMLDivElement>(null);
+  const arrow = useRef<HTMLSpanElement>(null);
+
+  // Track the stone every frame while open: on the landing page the stones move with the scroll story.
+  useLayoutEffect(() => {
+    let raf = 0;
+    let last = '';
+    const place = () => {
+      const a = anchor.current?.getBoundingClientRect();
+      if (a && box.current && arrow.current) {
+        const cx = a.left + a.width / 2;
+        const left = Math.min(Math.max(cx - WIDTH / 2, EDGE), window.innerWidth - WIDTH - EDGE);
+        const key = `${left.toFixed(1)},${a.top.toFixed(1)}`;
+        if (key !== last) {
+          last = key;
+          box.current.style.left = `${left}px`;
+          box.current.style.top = `${a.top - GAP}px`;
+          arrow.current.style.left = `${Math.min(Math.max(cx - left, 24), WIDTH - 24)}px`;
+        }
+      }
+      raf = requestAnimationFrame(place);
+    };
+    place();
+    return () => cancelAnimationFrame(raf);
+  }, [anchor]);
 
   return (
     <motion.div
+      ref={box}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
@@ -30,26 +64,26 @@ export function GravestoneTooltip({ project, variant, onOpen }: TooltipProps) {
       style={{
         ['--bc' as string]: border,
         ['--sh' as string]: 'rgba(20,18,58,0.9)',
-        position: 'absolute',
-        bottom: 'calc(100% + 22px)',
-        left: '50%',
-        translate: '-50% 0',
-        width: 320,
+        position: 'fixed',
+        top: -9999,
+        left: 0,
+        translate: '0 -100%',
+        width: WIDTH,
         padding: '18px 22px 20px',
         background: fill,
         color: text,
-        fontFamily: 'var(--font-ui)',
-        zIndex: 20,
+        fontFamily: 'var(--font-body)',
+        zIndex: 'var(--z-tooltip)',
         pointerEvents: 'none',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ fontWeight: 800, fontSize: 24, lineHeight: 1.15 }}>{project.name}</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, lineHeight: 1, letterSpacing: 1 }}>{project.name}</div>
         <StatusPill status={project.status} />
       </div>
-      <div style={{ fontWeight: 600, fontSize: 18, marginTop: 8, lineHeight: 1.4, opacity: 0.92 }}>{project.description}</div>
+      <div style={{ fontSize: 18, marginTop: 8, lineHeight: 1.5 }}>{project.description}</div>
       {isLanding ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontWeight: 800, fontSize: 16, color: 'var(--color-mid-purple)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontFamily: 'var(--font-display)', fontSize: 24, letterSpacing: 1, color: 'var(--color-mid-purple)' }}>
           Click to open this project <ChevronRight size={20} aria-hidden="true" />
         </div>
       ) : (
@@ -67,6 +101,7 @@ export function GravestoneTooltip({ project, variant, onOpen }: TooltipProps) {
         </div>
       )}
       <span
+        ref={arrow}
         aria-hidden="true"
         style={{
           position: 'absolute',

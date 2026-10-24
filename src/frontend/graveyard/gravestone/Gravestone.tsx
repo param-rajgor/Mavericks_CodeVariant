@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Stone as Project } from '@/frontend/graveyard/stone';
 import { StatusPill } from '@/frontend/graveyard/gravestone/StatusPill';
@@ -17,9 +18,6 @@ const SPARKLES = [
 // Exact stack from the brief: crisp 4px gold edge that follows the silhouette + soft halo.
 const GLOW_ON =
   'drop-shadow(4px 0 0 #FFD166) drop-shadow(-4px 0 0 #FFD166) drop-shadow(0 4px 0 #FFD166) drop-shadow(0 -4px 0 #FFD166) drop-shadow(0 0 14px rgba(255,209,102,.45))';
-// Same list with transparent colours, so the 150ms transition interpolates instead of snapping.
-const GLOW_OFF =
-  'drop-shadow(4px 0 0 rgba(255,209,102,0)) drop-shadow(-4px 0 0 rgba(255,209,102,0)) drop-shadow(0 4px 0 rgba(255,209,102,0)) drop-shadow(0 -4px 0 rgba(255,209,102,0)) drop-shadow(0 0 14px rgba(255,209,102,0))';
 
 function PixelSparkle() {
   return (
@@ -129,30 +127,47 @@ interface GravestoneProps {
   variant: 'landing' | 'dashboard';
   /** Dashboard only: the stone keeps its glow after being clicked (spec §3). */
   selected?: boolean;
+  /** Show the hover tooltip. Off while the Project Found panel is open. */
+  tooltip?: boolean;
   /** Shared-element id for the landing → dashboard transition. */
   layoutId?: string;
   onClick?: () => void;
   onOpenProject?: () => void;
 }
 
-export function Gravestone({ project, variant, selected, layoutId, onClick, onOpenProject }: GravestoneProps) {
+export function Gravestone({ project, variant, selected, tooltip = true, layoutId, onClick, onOpenProject }: GravestoneProps) {
   const [hovered, setHovered] = useState(false);
+  const anchor = useRef<HTMLDivElement>(null);
+  const closing = useRef(0);
   const Icon = PROJECT_ICONS[project.icon];
   const seed = seedFor(project.id);
   const vine = vineFor(project);
-  const showGlow = hovered || !!selected || (variant === 'landing' && project.featured);
+  // Glow only follows the cursor, the selection, or the stone the ghost is touching. Never on by default.
+  const showGlow = hovered || !!selected;
+
+  useEffect(() => () => clearTimeout(closing.current), []);
+  // React treats the portalled tooltip as part of this stone, so moving onto it counts as still hovering.
+  // The short delay lets the pointer cross the gap between the stone and its tooltip.
+  const enter = (e: PointerEvent) => {
+    if (e.pointerType === 'touch') return; // like a hover: a tap selects the stone instead
+    clearTimeout(closing.current);
+    setHovered(true);
+  };
+  const leave = () => {
+    clearTimeout(closing.current);
+    closing.current = window.setTimeout(() => setHovered(false), 150);
+  };
 
   return (
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <AnimatePresence>
-        {hovered && <GravestoneTooltip project={project} variant={variant} onOpen={onOpenProject} />}
-      </AnimatePresence>
+    <div ref={anchor} data-stone={project.id} onPointerEnter={enter} onPointerLeave={leave} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {createPortal(
+        <AnimatePresence>{hovered && tooltip && <GravestoneTooltip project={project} variant={variant} anchor={anchor} onOpen={onOpenProject} />}</AnimatePresence>,
+        document.body,
+      )}
 
       <motion.button
         type="button"
         layoutId={layoutId}
-        onHoverStart={() => setHovered(true)}
-        onHoverEnd={() => setHovered(false)}
         onClick={onClick}
         animate={{ y: hovered ? -6 : 0 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
@@ -167,7 +182,9 @@ export function Gravestone({ project, variant, selected, layoutId, onClick, onOp
           display: 'block',
         }}
       >
-        <div style={{ filter: showGlow ? GLOW_ON : GLOW_OFF, transition: 'filter 150ms ease-out' }}>
+        {/* `none` when off: an always-on filter (even a transparent one) costs every stone a filter pass. CSS
+         * still interpolates none ↔ the drop-shadow list, so the 150ms fade is kept. */}
+        <div style={{ filter: showGlow ? GLOW_ON : 'none', transition: 'filter 150ms ease-out' }}>
           <StoneShape seed={seed} />
         </div>
 
@@ -183,16 +200,16 @@ export function Gravestone({ project, variant, selected, layoutId, onClick, onOp
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 10,
-            fontFamily: 'var(--font-ui)',
+            gap: 8,
+            fontFamily: 'var(--font-display)',
           }}
         >
           <Icon size={38} color="#4A3E80" />
           <span
             style={{
-              fontWeight: 800,
-              fontSize: 23,
-              lineHeight: 1.12,
+              fontSize: 30,
+              lineHeight: 0.95,
+              letterSpacing: 1,
               color: '#2E2560',
               textAlign: 'center',
             }}

@@ -6,10 +6,10 @@ export function Heading() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' }}>
       <h1
         style={{
-          fontFamily: 'var(--font-heading)',
-          fontWeight: 700,
-          fontSize: 52,
-          lineHeight: 1.1,
+          fontFamily: 'var(--font-display)',
+          fontSize: 'clamp(56px, 4.7vw, 90px)',
+          lineHeight: 0.9,
+          letterSpacing: 2,
           color: 'var(--color-text-primary)',
           textShadow: outline,
           margin: 0,
@@ -29,11 +29,11 @@ export function Heading() {
           padding: '10px 24px',
           border: '2px solid var(--color-lavender)',
           background: 'var(--color-panel-indigo)',
-          fontFamily: 'var(--font-ui)',
-          fontWeight: 600,
-          fontSize: 14,
+          fontFamily: 'var(--font-body)',
+          fontSize: 18,
+          lineHeight: 1.4,
           color: 'var(--color-text-secondary)',
-          maxWidth: 520,
+          maxWidth: 680,
         }}
       >
         <span style={{ width: 8, height: 8, flexShrink: 0, background: 'var(--color-lavender)', transform: 'rotate(45deg)' }} />

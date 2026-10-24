@@ -17,7 +17,7 @@ function Panel({ title, to, children, className = '', note }: { title: string; t
       <header className="mb-3 flex items-baseline justify-between gap-3">
         <h2 className="text-lg font-extrabold leading-tight text-soft">{title}</h2>
         {to && (
-          <Link to={to} className="whitespace-nowrap text-[13px] font-extrabold text-gold underline-offset-4 hover:underline">
+          <Link to={to} className="whitespace-nowrap text-base font-extrabold text-gold underline-offset-4 hover:underline">
             View projects →
           </Link>
         )}
@@ -35,11 +35,11 @@ function Block({ status, label }: { status: Status; label?: string }) {
 function StatCard({ label, value, dot, highlight }: { label: string; value: number; dot?: string; highlight?: boolean }) {
   return (
     <div className="rl-panel px-5 py-4" style={highlight ? { borderColor: '#c9a8ff', boxShadow: '0 5px 0 #0d0e2b, 0 0 0 2px #a982f2 inset' } : undefined}>
-      <p className="flex items-center gap-2 text-[15px] font-extrabold text-soft">
+      <p className="flex items-center gap-2 text-lg font-extrabold text-soft">
         {dot && <span aria-hidden className="size-3.5 shrink-0" style={{ background: dot }} />}
         {label}
       </p>
-      <p className="mt-2 font-title text-5xl font-bold leading-none" style={{ color: dot ?? '#fff9f2' }}>
+      <p className="num mt-2 text-5xl leading-none" style={{ color: dot ?? '#fff9f2' }}>
         {value}
       </p>
     </div>
@@ -80,7 +80,7 @@ export function InsightsPage() {
           <StatCard label="Ready for review" value={ins.ready} dot="#c9a8ff" highlight />
         </div>
       </div>
-      <p className="mt-3 font-mono text-[13px] text-cream [text-shadow:0_2px_0_#0d0e2b]">
+      <p className="mt-3 inline-block bg-panel px-3 py-1 text-base text-dim">
         Based on the {ins.total} projects you’ve logged
         {ins.noAssetInfo > 0 && ` · ${ins.noAssetInfo} ${ins.noAssetInfo === 1 ? 'is' : 'are'} missing asset details, so asset counts may be low`}.
       </p>
@@ -94,7 +94,7 @@ export function InsightsPage() {
           </div>
           <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2.5">
             {STATUS_ORDER.map((s) => (
-              <li key={s} className="flex items-center gap-2.5 text-[15px] font-bold text-cream">
+              <li key={s} className="flex items-center gap-2.5 text-lg font-bold text-cream">
                 <span aria-hidden className="size-4 shrink-0" style={{ background: STATUS_UI[s].dot }} />
                 {STATUS_UI[s].filter} · {ins.counts[s]} <span className="font-medium text-dim">({pct(ins.counts[s])}%)</span>
               </li>
@@ -115,7 +115,7 @@ export function InsightsPage() {
           <div className="mt-2 flex h-36 items-end justify-between gap-3 px-1" role="img" aria-label={ins.activity.map((b) => `${b.label}: ${b.projects.length}`).join(', ')}>
             {ins.activity.map((b) => (
               <div key={b.key} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-                <span className="font-mono text-sm font-bold text-soft">{b.projects.length}</span>
+                <span className="num text-sm font-bold text-soft">{b.projects.length}</span>
                 <div className="flex w-full max-w-14 flex-col-reverse gap-[3px]" style={{ height: `${(b.projects.length / maxBucket) * 100}%`, minHeight: b.projects.length ? 8 : 2 }}>
                   {b.projects.length === 0 ? (
                     <span className="h-0.5 w-full bg-rule" />
@@ -146,7 +146,7 @@ export function InsightsPage() {
                   <button type="button" onClick={() => openDetail(r.project.id)} className="w-full  bg-panel-2 p-3.5 text-left border-2 border-twilight transition-transform hover:-translate-y-0.5">
                     <span className="flex items-baseline justify-between gap-2">
                       <span className="text-lg font-extrabold text-soft">{r.project.name}</span>
-                      <span className="font-mono text-sm font-bold text-gold">Score {r.score}</span>
+                      <span className="num text-sm font-bold text-gold">Score {r.score}</span>
                     </span>
                     {r.path && (
                       <span className="mt-2 inline-block  border-2 border-night px-2.5 py-0.5 text-sm font-extrabold text-ink" style={{ background: PATHS[r.path].accent }}>
@@ -169,11 +169,11 @@ export function InsightsPage() {
                 <span className="w-8 shrink-0">
                   {(() => { const I = ASSET_ICON[a.key]; return <I size={22} color={ASSET_COLOR[a.key]} aria-hidden="true" />; })()}
                 </span>
-                <span className="w-24 shrink-0 text-[15px] font-extrabold text-soft">{a.label}</span>
+                <span className="w-24 shrink-0 text-lg font-extrabold text-soft">{a.label}</span>
                 <span className="h-4 flex-1  bg-deep" role="img" aria-label={`${a.label}: ${a.count} of ${ins.total}`}>
                   <span className="block h-full " style={{ width: `${(a.count / maxAsset) * 100}%`, background: ASSET_COLOR[a.key] }} />
                 </span>
-                <span className="w-6 text-right font-mono text-sm font-bold text-soft">{a.count}</span>
+                <span className="w-6 text-right num text-sm font-bold text-soft">{a.count}</span>
               </li>
             ))}
           </ul>
@@ -195,7 +195,7 @@ export function InsightsPage() {
                 <span key={i} aria-hidden className="absolute inset-y-0 w-px bg-[#1c1d5a]" style={{ left: `${i * 10}%` }} />
               ))}
               <span aria-hidden className="absolute left-[2%] top-[4%] h-[40%] w-[38%] border-2 border-dashed border-gold" />
-              <span aria-hidden className="absolute left-[4%] top-[5%] font-mono text-[0.85rem] font-bold text-gold">
+              <span aria-hidden className="absolute left-[4%] top-[5%] num text-base font-bold text-gold">
                 Worth a look
               </span>
               {ins.scatter.map(({ project, interest, progress }) => {
@@ -213,7 +213,15 @@ export function InsightsPage() {
                     className="absolute size-3.5 -translate-x-1/2 -translate-y-1/2 outline-offset-4 hover:scale-125"
                     style={{ left: `${x}%`, top: `${y}%`, background: STATUS_UI[project.status].dot, boxShadow: '0 0 0 2px #101240' }}
                   >
-                    {hot && <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[0.85rem] font-bold text-soft">{project.name}</span>}
+                    {/* labels alternate above / below the dot so two nearby projects don't print over each other */}
+                    {hot && (
+                      <span
+                        className="pointer-events-none absolute left-4 z-10 whitespace-nowrap bg-[#101240] px-1.5 py-0.5 font-body text-base font-bold text-soft"
+                        style={{ top: worth.indexOf(project) % 2 ? 'calc(50% + 4px)' : 'auto', bottom: worth.indexOf(project) % 2 ? 'auto' : 'calc(50% + 4px)' }}
+                      >
+                        {project.name}
+                      </span>
+                    )}
                   </button>
                 );
               })}

@@ -17,7 +17,7 @@ import { StatsBar } from '@/frontend/landing/StatsBar';
 import { pixelOutline } from '@/frontend/ui/pixelText';
 import { drawGroundB, drawGroundC, drawPath, drawSkyDawn, drawSkyTwilight, drawSunDawn, drawSunTwilight, rangeDrawer, CROSS } from './art';
 import { Ghost } from './Ghost';
-import { CrossroadsProps, GraveyardProps, ReasonPosts, SunriseProps } from './JourneyProps';
+import { CrossroadsProps, GraveyardProps, PathSigns, REASON_X, ReasonPosts, SunriseProps } from './JourneyProps';
 import { CAPTIONS, PANEL, PATHS_COPY, WORLD_W, bump, clamp, dawnAt, ghostAt, INTEREST, ramp } from './timeline';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -40,7 +40,8 @@ const STARS: [number, number][] = [[192, 12], [226, 6], [262, 16], [312, 8], [17
 const LANTERNS_A: [number, number][] = [[300, 81], [324, 81]];
 const PETALS_A: [number, number][] = [[300, 64], [340, 66], [360, 60]];
 const ZZZ_A: [number, number][] = [[53, 140], [58, 133], [64, 127]];
-const FIREFLIES_A: [number, number][] = [[120, 150], [176, 122], [238, 140], [290, 112], [352, 150], [205, 98], [96, 120], [330, 128], [260, 160], [150, 164]];
+// Kept in the gaps between stones (and above them) so none drifts across a name or status pill.
+const FIREFLIES_A: [number, number][] = [[120, 150], [176, 122], [231, 140], [290, 112], [352, 150], [205, 98], [96, 120], [342, 128], [287, 160], [175, 164]];
 const FIREFLIES_C: [number, number][] = [[40, 120], [120, 130], [200, 118], [280, 126], [340, 108]];
 const PETALS_C: [number, number][] = [[80, 60], [190, 52], [300, 66]];
 
@@ -93,7 +94,45 @@ export function JourneyLanding({ stones, onEnter }: Props) {
     const timed = [...root.querySelectorAll<HTMLElement>('[data-from]')].map((el) => ({ el, from: Number(el.dataset.from), to: Number(el.dataset.to), fade: Number(el.dataset.fade ?? 0.012) }));
     const dots = [...root.querySelectorAll<HTMLElement>('[data-dot]')];
     const actor = root.querySelector<HTMLElement>('[data-ghost-actor]');
-    const set = (k: string, v: string | number) => root.style.setProperty(k, String(v));
+    // Each scroll variable is written once, onto the one region of the scene that reads it, and only when its
+    // value changes. A custom property changed on the stage root restyles every node in the story, which made
+    // scrolling lag; on a region it only restyles that region.
+    const scopes = Object.fromEntries([...root.querySelectorAll<HTMLElement>('[data-scope]')].map((el) => [el.dataset.scope!, el]));
+    const scopeOf = (k: string): HTMLElement => {
+      const name = /^--(dawn|stars|sun[TD])$/.test(k)
+        ? 'sky'
+        : /^--(art|touch)\d$/.test(k)
+          ? 'graveyard'
+          : /^--(rs\d|l\d|rp)$/.test(k)
+            ? 'crossroads'
+            : /^--(bloom|lg|fly)$/.test(k)
+              ? 'sunrise'
+              : /^--pm\d$/.test(k)
+                ? 'paths'
+                : k.slice(2);
+      return scopes[name] ?? root;
+    };
+    const vars = new Map<string, string>();
+    const set = (k: string, v: string | number) => {
+      const s = String(v);
+      if (vars.get(k) === s) return;
+      vars.set(k, s);
+      scopeOf(k).style.setProperty(k, s);
+    };
+    const put = (el: HTMLElement, cache: Map<string, string>, k: string, v: string) => {
+      if (cache.get(k) === v) return;
+      cache.set(k, v);
+      el.style.setProperty(k, v);
+    };
+    const putData = (el: HTMLElement, k: string, v: string) => {
+      if (el.dataset[k] !== v) el.dataset[k] = v;
+    };
+    const elCache = new WeakMap<HTMLElement, Map<string, string>>();
+    const cacheOf = (el: HTMLElement) => {
+      let c = elCache.get(el);
+      if (!c) elCache.set(el, (c = new Map()));
+      return c;
+    };
     const state = { p: 0 };
     let lastP = 0;
 
@@ -104,8 +143,8 @@ export function JourneyLanding({ stones, onEnter }: Props) {
       const camMin = 0;
       const camMax = WORLD_W - (vw - left) / s;
       const camX = clamp(g.x - ((vw < 700 ? 0.3 : 0.4) * vw - left) / s, camMin, camMax);
-      worldEl.style.transform = `translate3d(${(-camX * s).toFixed(1)}px,0,0)`;
-      for (const l of par) l.el.style.transform = `translate3d(${(-camX * l.f * s).toFixed(1)}px,0,0)`;
+      put(worldEl, cacheOf(worldEl), 'transform', `translate3d(${(-camX * s).toFixed(1)}px,0,0)`);
+      for (const l of par) put(l.el, cacheOf(l.el), 'transform', `translate3d(${(-camX * l.f * s).toFixed(1)}px,0,0)`);
 
       if (actor) {
         const v = ghostAt(Math.min(1, p + 0.004)).x - ghostAt(Math.max(0, p - 0.004)).x;
@@ -119,65 +158,66 @@ export function JourneyLanding({ stones, onEnter }: Props) {
             look = d;
           }
         }
-        actor.dataset.move = moving ? '1' : '0';
-        actor.dataset.face = moving ? (v > 0 ? 'r' : 'l') : look < -3 ? 'l' : 'r';
-        actor.dataset.look = !moving && Math.abs(look) > 4 ? (look > 0 ? 'r' : 'l') : 'c';
-        actor.dataset.wave = p > 0.975 ? '1' : '0';
+        putData(actor, 'move', moving ? '1' : '0');
+        putData(actor, 'face', moving ? (v > 0 ? 'r' : 'l') : look < -3 ? 'l' : 'r');
+        putData(actor, 'look', !moving && Math.abs(look) > 4 ? (look > 0 ? 'r' : 'l') : 'c');
+        putData(actor, 'wave', p > 0.975 ? '1' : '0');
         const hop = moving ? Math.sin(p * 900) * 0.9 : 0;
-        actor.style.transform = `translate3d(${(g.x * s).toFixed(1)}px,${((g.y + hop) * s).toFixed(1)}px,0)`;
+        put(actor, cacheOf(actor), 'transform', `translate3d(${(g.x * s).toFixed(1)}px,${((g.y + hop) * s).toFixed(1)}px,0)`);
       }
 
       const dawn = dawnAt(p);
-      set('--dawn', dawn.toFixed(3));
-      set('--stars', clamp(1 - dawn * 1.8).toFixed(3));
+      set('--dawn', dawn.toFixed(2));
+      set('--stars', clamp(1 - dawn * 1.8).toFixed(2));
       set('--sunT', (74 * ramp(p, 0.04, 0.5)).toFixed(2));
       set('--sunD', (92 * (1 - ramp(p, 0.7, 1))).toFixed(2));
-      set('--warm', (dawn * 0.34).toFixed(3));
-      set('--leaf', (1 - ramp(p, 0.04, 0.18)).toFixed(3));
+      set('--warm', (dawn * 0.34).toFixed(2));
+      set('--leaf', (1 - ramp(p, 0.04, 0.18)).toFixed(2));
 
       // scene one: pieces of work above the stones, sparks on the stone being touched, signposts that light up
-      for (let i = 0; i < 6; i++) set(`--art${i}`, (ramp(p, 0.085 + i * 0.025, 0.12 + i * 0.025) * (1 - ramp(p, 0.275, 0.305))).toFixed(3));
+      for (let i = 0; i < 6; i++) set(`--art${i}`, (ramp(p, 0.085 + i * 0.025, 0.12 + i * 0.025) * (1 - ramp(p, 0.275, 0.305))).toFixed(2));
       let near = -1;
       LANDING_STONE_CENTERS.forEach((cx, i) => {
         const n = p > 0.06 && p < 0.31 ? clamp(1 - Math.abs(g.x - cx) / 7) : 0;
         if (n > 0.5) near = i;
-        set(`--touch${i}`, n.toFixed(3));
+        set(`--touch${i}`, n.toFixed(2));
       });
       if (near !== activeRef.current) {
         activeRef.current = near;
         setActive(near);
       }
-      [18, 40, 62, 84].forEach((x, i) => {
+      REASON_X.forEach((x, i) => {
         const wx = PANEL + x;
         const n = clamp(1 - Math.abs(g.x - wx) / 16);
-        set(`--rs${i}`, Math.max(n, g.x > wx + 6 ? 0.28 : 0).toFixed(3));
+        set(`--rs${i}`, Math.max(n, g.x > wx + 6 ? 0.28 : 0).toFixed(2));
       });
 
       // scene two: the five paths, the crystal and its factors, the fragments
       CROSS.posts.forEach((x, i) => {
         const wx = PANEL + x;
         const n = clamp(1 - Math.abs(g.x - wx) / 20);
-        set(`--l${i}`, Math.max(n, p > 0.4 && g.x > wx - 8 ? 0.55 : 0).toFixed(3));
-        set(`--pm${i}`, (n * ramp(p, 0.4, 0.425) * (1 - ramp(p, 0.725, 0.75))).toFixed(3));
+        set(`--l${i}`, Math.max(n, p > 0.4 && g.x > wx - 8 ? 0.55 : 0).toFixed(2));
+        set(`--pm${i}`, (n * ramp(p, 0.4, 0.425) * (1 - ramp(p, 0.725, 0.75))).toFixed(2));
       });
-      set('--rp', ramp(p, 0.595, 0.63).toFixed(3));
+      set('--rp', ramp(p, 0.595, 0.63).toFixed(2));
 
       // scene three
-      set('--bloom', ramp(p, 0.8, 0.98).toFixed(3));
-      set('--lg', (ramp(p, 0.76, 0.86) * (1 - ramp(p, 0.94, 1) * 0.85)).toFixed(3));
-      set('--fly', ramp(p, 0.84, 0.93).toFixed(3));
+      set('--bloom', ramp(p, 0.8, 0.98).toFixed(2));
+      set('--lg', (ramp(p, 0.76, 0.86) * (1 - ramp(p, 0.94, 1) * 0.85)).toFixed(2));
+      set('--fly', ramp(p, 0.84, 0.93).toFixed(2));
 
       for (const t of timed) {
         const o = ramp(p, t.from, t.from + t.fade) * (1 - ramp(p, t.to - t.fade, t.to));
-        t.el.style.opacity = o.toFixed(3);
-        t.el.style.visibility = o < 0.01 ? 'hidden' : 'visible';
-        t.el.style.pointerEvents = o > 0.5 ? 'auto' : 'none';
+        const c = cacheOf(t.el);
+        put(t.el, c, 'opacity', o.toFixed(2));
+        put(t.el, c, 'visibility', o < 0.01 ? 'hidden' : 'visible');
+        put(t.el, c, 'pointer-events', o > 0.5 ? 'auto' : 'none');
       }
       let on = 0;
       CHAPTERS.forEach((c, i) => {
         if (p >= c.p - 0.14) on = i;
       });
-      dots.forEach((d, i) => (d.dataset.on = i === on ? '1' : '0'));
+      dots.forEach((d, i) => putData(d, 'on', i === on ? '1' : '0'));
     };
 
     render(state.p);
@@ -193,7 +233,8 @@ export function JourneyLanding({ stones, onEnter }: Props) {
       onUpdate: (self) => {
         if (Math.abs(self.progress - lastP) < 0.00005) return;
         lastP = self.progress;
-        gsap.to(state, { p: self.progress, duration: 0.55, ease: 'power2.out', overwrite: true, onUpdate: () => render(state.p) });
+        // Short glide: smooth, but the scene keeps up with the wheel instead of trailing it by half a second.
+        gsap.to(state, { p: self.progress, duration: 0.25, ease: 'power2.out', overwrite: true, onUpdate: () => render(state.p) });
       },
     });
     const onResize = () => {
@@ -223,7 +264,7 @@ export function JourneyLanding({ stones, onEnter }: Props) {
         {/* sky and sun: fixed behind everything, warming with the story */}
         <motion.div exit={{ scale: 1.08 }} transition={{ duration: 0.7, ease: 'easeIn' }} style={{ ...fill, transformOrigin: '62% 70%' }}>
           <div aria-hidden="true" style={{ ...fill, overflow: 'hidden' }}>
-            <div style={box}>
+            <div data-scope="sky" style={box}>
               <PixelCanvas draw={drawSkyTwilight} variant="landing" />
               <PixelCanvas draw={drawSkyDawn} variant="landing" style={{ opacity: 'var(--dawn)' }} />
               <div style={{ ...fill, opacity: 'var(--stars)' }}>
@@ -255,7 +296,7 @@ export function JourneyLanding({ stones, onEnter }: Props) {
           <div style={{ ...fill, overflow: 'hidden', pointerEvents: 'none' }}>
             <div ref={world} style={{ position: 'absolute', left: art.left, top: art.top, width: ART_W * 3 * s, height: ART_H * s, ['--s' as string]: s, willChange: 'transform' }}>
               {/* panel A: the graveyard */}
-              <div style={panelStyle(0)}>
+              <div data-scope="graveyard" style={panelStyle(0)}>
                 <PixelCanvas draw={drawLandA} variant="landing" />
                 <PixelCanvas draw={pathA} variant="landing" />
                 <LanternGlows points={LANTERNS_A} />
@@ -284,36 +325,16 @@ export function JourneyLanding({ stones, onEnter }: Props) {
               </div>
 
               {/* panel B: the crossroads */}
-              <div style={panelStyle(1)}>
+              <div data-scope="crossroads" style={panelStyle(1)}>
                 <PixelCanvas draw={drawGroundB} variant="landing" />
                 <PixelCanvas draw={pathB} variant="landing" />
-                <ReasonPosts />
-                {CROSS.posts.map((x, i) => (
-                  <div
-                    key={x}
-                    style={{
-                      position: 'absolute',
-                      left: `${((x - 14) / ART_W) * 100}%`,
-                      top: `${((CROSS.islandTop - 31) / ART_H) * 100}%`,
-                      width: `${(29 / ART_W) * 100}%`,
-                      height: `${(11 / ART_H) * 100}%`,
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontFamily: 'var(--font-ui)',
-                      fontWeight: 900,
-                      letterSpacing: '0.04em',
-                      fontSize: 'max(11px, calc(var(--s) * 2.4px))',
-                      color: '#2E1E18',
-                    }}
-                  >
-                    {PATHS_COPY[i].label}
-                  </div>
-                ))}
+                <ReasonPosts s={s} />
                 <CrossroadsProps px={s} />
+                <PathSigns s={s} />
               </div>
 
               {/* panel C: the sunrise */}
-              <div style={panelStyle(2)}>
+              <div data-scope="sunrise" style={panelStyle(2)}>
                 <PixelCanvas draw={drawGroundC} variant="landing" />
                 <SunriseProps px={s} />
                 <Fireflies points={FIREFLIES_C} />
@@ -325,8 +346,8 @@ export function JourneyLanding({ stones, onEnter }: Props) {
           </div>
 
           {/* warm light, and the corner leaves that frame the very first screen */}
-          <div aria-hidden="true" style={{ ...fill, pointerEvents: 'none', background: 'radial-gradient(ellipse at 66% 52%, rgba(255,214,140,0.85), rgba(255,170,120,0.28) 45%, transparent 75%)', opacity: 'var(--warm)' }} />
-          <div aria-hidden="true" style={{ ...fill, pointerEvents: 'none', opacity: 'var(--leaf)' }}>
+          <div data-scope="warm" aria-hidden="true" style={{ ...fill, pointerEvents: 'none', background: 'radial-gradient(ellipse at 66% 52%, rgba(255,214,140,0.85), rgba(255,170,120,0.28) 45%, transparent 75%)', opacity: 'var(--warm)' }} />
+          <div data-scope="leaf" aria-hidden="true" style={{ ...fill, pointerEvents: 'none', opacity: 'var(--leaf)' }}>
             <div style={box}>
               <PixelCanvas draw={drawLeaves} variant="landing" />
             </div>
@@ -373,7 +394,7 @@ export function JourneyLanding({ stones, onEnter }: Props) {
           ))}
 
           {/* the line for whichever path the ghost is standing at */}
-          <div className="journey-path-line" aria-live="polite">
+          <div data-scope="paths" className="journey-path-line" aria-live="polite">
             {PATHS_COPY.map((pc, i) => (
               <div key={pc.label} className="journey-path-box" style={{ opacity: `var(--pm${i})`, borderColor: pc.accent, ['--accent' as string]: pc.accent }}>
                 <span className="journey-path-name" style={{ background: pc.accent }}>
@@ -387,10 +408,10 @@ export function JourneyLanding({ stones, onEnter }: Props) {
           <div data-from={0.9} data-to={1.3} data-fade={0.04} className="journey-finale" style={{ position: 'absolute', opacity: 0, visibility: 'hidden' }}>
             <h2
               style={{
-                fontFamily: 'var(--font-heading)',
-                fontWeight: 700,
-                fontSize: 'clamp(32px, 4.2vw, 72px)',
-                lineHeight: 1.1,
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(48px, 5vw, 96px)',
+                lineHeight: 0.92,
+                letterSpacing: 2,
                 margin: 0,
                 color: 'var(--color-text-primary)',
                 textShadow: pixelOutline('var(--color-stone-outline)', 2, 6),

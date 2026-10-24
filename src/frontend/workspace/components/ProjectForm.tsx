@@ -118,8 +118,8 @@ export function ProgressSection({ draft, errors, onChange }: SectionProps) {
               data-autofocus
             />
             <div className="flex items-center gap-1">
-              <input id={id} aria-describedby={describedBy} aria-invalid={invalid} type="number" min={0} max={100} inputMode="numeric" className="rl-input !w-20 text-center font-mono" value={p ?? ''} placeholder="—" onChange={(e) => onChange({ progress: e.target.value === '' ? null : Number(e.target.value) })} />
-              <span className="font-mono text-sm">%</span>
+              <input id={id} aria-describedby={describedBy} aria-invalid={invalid} type="number" min={0} max={100} inputMode="numeric" className="rl-input !w-20 text-center num" value={p ?? ''} placeholder="—" onChange={(e) => onChange({ progress: e.target.value === '' ? null : Number(e.target.value) })} />
+              <span className="num text-sm">%</span>
             </div>
           </div>
         )}
@@ -221,9 +221,9 @@ export function InterestSection({ draft, errors, onChange }: SectionProps) {
             return (
               <label key={n} className={`flex min-h-11 cursor-pointer flex-col items-center gap-1  border-2 p-3 text-center ${on ? 'border-lavender bg-panel-2' : 'border-rule bg-panel-2'}`}>
                 <input type="radio" name="interest" checked={on} onChange={() => onChange({ currentInterest: n })} className="size-4 accent-twilight" data-autofocus={n === 1 ? true : undefined} />
-                <span className="font-mono text-lg font-semibold">{n}</span>
+                <span className="num text-lg font-semibold">{n}</span>
                 <span className="text-xs font-extrabold">{INTEREST_LABELS[n].label}</span>
-                <span className="text-[0.85rem] leading-tight text-dim">{INTEREST_LABELS[n].hint}</span>
+                <span className="text-base leading-tight text-dim">{INTEREST_LABELS[n].hint}</span>
               </label>
             );
           })}

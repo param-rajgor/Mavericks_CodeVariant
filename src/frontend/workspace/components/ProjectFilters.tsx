@@ -54,7 +54,7 @@ export function SortSelect({ view, className = '' }: { view: ProjectView; classN
       <select
         value={view.sort}
         onChange={(e) => view.setSort(e.target.value as SortKey)}
-        className="h-12 w-full appearance-none  border-[3px] border-twilight bg-panel pl-4 pr-11 text-[15px] font-extrabold text-cream shadow-[0_4px_0_#0d0e2b]"
+        className="h-12 w-full appearance-none  border-[3px] border-twilight bg-panel pl-4 pr-11 text-lg font-extrabold text-cream shadow-[0_4px_0_#0d0e2b]"
       >
         {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
           <option key={k} value={k}>

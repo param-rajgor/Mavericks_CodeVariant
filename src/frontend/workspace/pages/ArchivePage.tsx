@@ -33,21 +33,21 @@ function ArchiveCard({ project }: { project: Project }) {
             <span className="notched grid size-12 shrink-0 place-items-center bg-stone">
               <Icon size={26} color="#4a3e80" aria-hidden="true" />
             </span>
-            <h2 id={`arch-${project.id}`} className="font-pixel text-2xl font-bold leading-tight text-soft [overflow-wrap:anywhere]">
+            <h2 id={`arch-${project.id}`} className="font-display text-2xl font-bold leading-tight text-soft [overflow-wrap:anywhere]">
               {project.name}
             </h2>
           </div>
           <StatusPill status="Archived" />
         </header>
-        <p className="mt-2 text-[0.9rem] font-bold tracking-wide text-dim">{fullDate(at)}</p>
-        <p className="mt-3 text-[1.05rem] leading-snug text-soft">{project.archiveNote ? `“${project.archiveNote}”` : 'No archive note. It rests quietly.'}</p>
+        <p className="mt-2 text-base font-bold tracking-wide text-dim">{fullDate(at)}</p>
+        <p className="mt-3 text-lg leading-snug text-soft">{project.archiveNote ? `“${project.archiveNote}”` : 'No archive note. It rests quietly.'}</p>
         <dl className="mt-4 grid grid-cols-[6.5rem_1fr] gap-y-1.5 text-base">
-          <dt className="text-[0.85rem] font-extrabold uppercase text-dim">Assets</dt>
+          <dt className="text-base font-extrabold uppercase text-dim">Assets</dt>
           <dd className="font-bold text-soft">{project.assets.length ? project.assets.map((a) => ASSET_META[a].label).join(' · ') : 'None recorded'}</dd>
-          <dt className="text-[0.85rem] font-extrabold uppercase text-dim">Previously</dt>
+          <dt className="text-base font-extrabold uppercase text-dim">Previously</dt>
           <dd className="font-bold text-soft">{prev}</dd>
         </dl>
-        <ol className="mt-4 space-y-1.5 border-l-[3px] border-twilight pl-3 text-[0.95rem] text-dim" aria-label="Short history">
+        <ol className="mt-4 space-y-1.5 border-l-[3px] border-twilight pl-3 text-lg text-dim" aria-label="Short history">
           <li>{monthYear(project.startedAt)} · Started</li>
           <li>{prev} · Last worked</li>
           <li className="font-bold text-soft">Archived {monthDay(at)} · Rested</li>
@@ -69,7 +69,7 @@ function ArchiveCard({ project }: { project: Project }) {
         {confirm && (
           <div role="group" aria-label={`Confirm deleting ${project.name}`} className="mt-5 border-[3px] border-blossom bg-deep p-4">
             <p className="text-lg font-extrabold text-soft">Delete {project.name} for good?</p>
-            <p className="mt-1 text-[0.95rem] text-dim">This cannot be undone. Restore it instead if you might want it back.</p>
+            <p className="mt-1 text-lg text-dim">This cannot be undone. Restore it instead if you might want it back.</p>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <Button variant="ghost" small onClick={() => setConfirm(false)} data-autofocus>
                 Keep it

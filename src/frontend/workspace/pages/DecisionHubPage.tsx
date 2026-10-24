@@ -34,14 +34,14 @@ function ScoreBars({ project }: { project: Project }) {
           <h2 id="score-h" className="text-xl font-extrabold text-soft">
             Relaunch Score
           </h2>
-          <p className="mt-1 max-w-[13rem] text-[0.9rem] leading-snug text-cream">A guide built from five visible factors. It is not a prediction.</p>
+          <p className="mt-1 max-w-[13rem] text-base leading-snug text-cream">A guide built from five visible factors. It is not a prediction.</p>
         </div>
         <p className="flex items-baseline gap-1 whitespace-nowrap">
-          <span className="font-title text-6xl font-bold leading-none text-gold" aria-label={a.total == null ? 'No score yet' : `Score ${a.total}${a.status === 'provisional' ? ', provisional' : ''}`}>
+          <span className="num text-6xl leading-none text-gold" aria-label={a.total == null ? 'No score yet' : `Score ${a.total}${a.status === 'provisional' ? ', provisional' : ''}`}>
             {a.total ?? '—'}
             {a.status === 'provisional' && '*'}
           </span>
-          <span className="font-mono text-sm text-dim">/100</span>
+          <span className="num text-sm text-dim">/100</span>
         </p>
       </div>
       <ul className="mt-5 space-y-4">
@@ -49,11 +49,11 @@ function ScoreBars({ project }: { project: Project }) {
           const filled = f.value == null ? 0 : Math.round((f.value / 100) * SEGMENTS);
           return (
             <li key={f.key}>
-              <p className="flex items-baseline justify-between gap-2 text-[15px] font-extrabold text-soft">
+              <p className="flex items-baseline justify-between gap-2 text-lg font-extrabold text-soft">
                 <span>
                   {f.label} <span className="text-sm font-medium text-dim">· weight {WEIGHTS[f.key]}</span>
                 </span>
-                <span className="font-mono text-sm" aria-label={points[i] == null ? 'not known' : `${points[i]} of ${f.weight}`}>
+                <span className="shrink-0 whitespace-nowrap num text-lg" aria-label={points[i] == null ? 'not known' : `${points[i]} of ${f.weight}`}>
                   {points[i] ?? '—'} / {f.weight}
                 </span>
               </p>
@@ -62,7 +62,7 @@ function ScoreBars({ project }: { project: Project }) {
                   <span key={k} className="h-3 flex-1 rounded-[2px]" style={{ background: k < filled ? FACTOR_COLOR[f.key] : '#2b2a6d' }} />
                 ))}
               </div>
-              <p className="mt-1.5 text-[13px] leading-snug text-cream">{f.explanation}</p>
+              <p className="mt-1.5 text-base leading-snug text-cream">{f.explanation}</p>
             </li>
           );
         })}
@@ -152,7 +152,7 @@ export function DecisionHubPage() {
                   setPicked(e.target.value);
                   navigate(`/decision?project=${e.target.value}`, { replace: true });
                 }}
-                className="h-14 w-full appearance-none  border-[3px] border-lavender bg-[#f3eaff] pl-4 pr-11 text-[17px] font-extrabold text-night"
+                className="h-14 w-full appearance-none  border-[3px] border-lavender bg-[#f3eaff] pl-4 pr-11 text-lg font-extrabold text-night"
               >
                 {open.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -165,24 +165,24 @@ export function DecisionHubPage() {
             </label>
             <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
               <div>
-                <dt className="text-dim">STATUS</dt>
+                <dt className="font-display text-xl tracking-[1px] text-dim">STATUS</dt>
                 <dd className="mt-1">
-                  <span className="rl-status font-sans" style={{ background: ui.bg, color: ui.fg }}>
+                  <span className="rl-status" style={{ background: ui.bg, color: ui.fg }}>
                     {ui.chip}
                   </span>
                 </dd>
               </div>
               <div>
-                <dt className="text-dim">PROGRESS</dt>
-                <dd className="mt-1 font-sans text-sm font-extrabold text-soft">{project.progress}%</dd>
+                <dt className="font-display text-xl tracking-[1px] text-dim">PROGRESS</dt>
+                <dd className="mt-1 font-display text-2xl leading-none tracking-wide text-soft">{project.progress}%</dd>
               </div>
               <div>
-                <dt className="text-dim">LAST</dt>
-                <dd className="mt-1 font-sans text-sm font-extrabold text-soft">{ago(project)}</dd>
+                <dt className="font-display text-xl tracking-[1px] text-dim">LAST</dt>
+                <dd className="mt-1 font-display text-2xl leading-none tracking-wide text-soft">{ago(project)}</dd>
               </div>
               <div>
-                <dt className="text-dim">INTEREST</dt>
-                <dd className="mt-1 font-sans text-sm font-extrabold text-soft">{project.currentInterest ? INTEREST_LABELS[project.currentInterest].label : '—'}</dd>
+                <dt className="font-display text-xl tracking-[1px] text-dim">INTEREST</dt>
+                <dd className="mt-1 font-display text-2xl leading-none tracking-wide text-soft">{project.currentInterest ? INTEREST_LABELS[project.currentInterest].label : '—'}</dd>
               </div>
             </dl>
             <p className="mt-3 text-sm text-cream">
@@ -214,17 +214,17 @@ export function DecisionHubPage() {
                   }}
                 >
                   <span className="flex items-center gap-2">
-                    <span className=" px-2.5 py-0.5 text-[0.85rem] font-bold text-night" style={{ background: p.accent }}>
+                    <span className="px-2.5 pb-1 pt-0.5 font-display text-[22px] leading-none tracking-[1px] text-night" style={{ background: p.accent }}>
                       Path {i + 1}
                     </span>
-                    {isRec && <span className=" bg-gold px-2.5 py-0.5 text-[0.85rem] font-bold text-night">Recommended</span>}
+                    {isRec && <span className="bg-gold px-2.5 pb-1 pt-0.5 font-display text-[22px] leading-none tracking-[1px] text-night">Recommended</span>}
                   </span>
-                  <span className="mt-3 block font-title text-4xl font-bold leading-none" style={{ color: p.accent }}>
+                  <span className="mt-3 block font-display text-[3.25rem] leading-[0.9] tracking-[1px] [text-shadow:0_3px_0_#14122E]" style={{ color: p.accent }}>
                     {p.label}
                   </span>
-                  <span className="mt-3 block text-[15px] leading-snug text-cream">{p.tagline}</span>
-                  <span className="mt-3 block text-[13px] font-extrabold leading-snug text-gold">Best when {p.bestWhen.charAt(0).toLowerCase() + p.bestWhen.slice(1)}</span>
-                  <span className="mt-auto block pt-4 text-[0.85rem] uppercase leading-snug tracking-wide" style={{ color: on ? p.accent : '#bdb6e8' }}>
+                  <span className="mt-3 block text-lg leading-snug text-cream">{p.tagline}</span>
+                  <span className="mt-3 block text-lg font-semibold leading-snug text-gold">Best when {p.bestWhen.charAt(0).toLowerCase() + p.bestWhen.slice(1)}</span>
+                  <span className="mt-auto block pt-4 font-display text-2xl uppercase leading-tight tracking-[1px]" style={{ color: on ? p.accent : '#DED5F4' }}>
                     {on
                       ? p.id === 'repurpose'
                         ? `Selected · ${assets} reusable asset${assets === 1 ? '' : 's'}`
@@ -238,15 +238,15 @@ export function DecisionHubPage() {
             })}
 
             <section className=" p-5" style={{ background: '#1e1c48', border: '3px solid #9fb4ee', boxShadow: '0 5px 0 #14123a' }} aria-labelledby="why-h">
-              <h2 id="why-h" className="text-lg font-extrabold text-sky">
+              <h2 id="why-h" className="font-display text-[2.25rem] leading-none tracking-[1px] text-sky">
                 Why {meta.label} fits
               </h2>
-              <p className="mt-2 text-sm leading-snug text-cream">{reasons}</p>
+              <p className="mt-2 text-base leading-normal text-cream">{reasons}</p>
               <ol className="mt-4 space-y-3">
                 {steps.map((s, i) => (
                   <li key={s} className="flex items-start gap-3">
-                    <span className="grid size-7 shrink-0 place-items-center  bg-sky font-mono text-sm font-bold text-night">{i + 1}</span>
-                    <span className="text-[14px] font-bold leading-snug text-soft">{s}</span>
+                    <span className="grid size-7 shrink-0 place-items-center  bg-sky num text-xl text-night">{i + 1}</span>
+                    <span className="text-base leading-normal text-soft">{s}</span>
                   </li>
                 ))}
               </ol>
@@ -255,7 +255,7 @@ export function DecisionHubPage() {
 
           <div className="mt-5 flex flex-wrap items-center gap-4  border-[3px] border-twilight bg-panel p-4 shadow-[0_5px_0_#14123a]">
             <PixelSprite sprite={SPROUT} px={4} />
-            <p className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-soft">
+            <p className="min-w-0 flex-1 text-lg font-bold leading-snug text-soft">
               {archived ? (
                 <>
                   {project.name} is archived. Restore it from the Archive to choose a new path.

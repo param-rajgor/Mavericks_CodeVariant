@@ -26,6 +26,8 @@ const [S1, S2, S3, S4] = LANDING_STONE_CENTERS;
 const HOVER = 104; // the ghost floats just above the stones
 const [P1, P2, P3, P4, P5] = CROSS.posts;
 const DECK = CROSS.islandTop - 20;
+/** Above the path signs' boards (art y ~117–128), so the ghost never covers their text. */
+const SIGN_HOVER = CROSS.islandTop - 46;
 
 /** Ghost keyframes: [scroll, world x, world y of its centre]. The same x twice in a row is a pause. */
 const GHOST: ReadonlyArray<readonly [number, number, number]> = [
@@ -43,18 +45,18 @@ const GHOST: ReadonlyArray<readonly [number, number, number]> = [
   [0.35, B + 90, 144],
   [0.38, B + 128, 138],
   [0.405, B + 160, DECK - 4],
-  [0.43, B + P1, DECK],
-  [0.465, B + P1, DECK],
-  [0.485, B + P2, DECK],
-  [0.52, B + P2, DECK],
-  [0.54, B + P3, DECK],
-  [0.575, B + P3, DECK],
-  [0.595, B + P4, DECK],
-  [0.63, B + P4, DECK],
-  [0.65, B + P5, DECK],
-  [0.675, B + P5, DECK],
-  [0.7, B + CROSS.islandCx, DECK - 8],
-  [0.74, B + CROSS.islandCx, DECK - 8],
+  [0.43, B + P1, SIGN_HOVER],
+  [0.465, B + P1, SIGN_HOVER],
+  [0.485, B + P2, SIGN_HOVER],
+  [0.52, B + P2, SIGN_HOVER],
+  [0.54, B + P3, SIGN_HOVER],
+  [0.575, B + P3, SIGN_HOVER],
+  [0.595, B + P4, SIGN_HOVER],
+  [0.63, B + P4, SIGN_HOVER],
+  [0.65, B + P5, SIGN_HOVER],
+  [0.675, B + P5, SIGN_HOVER],
+  [0.7, B + CROSS.islandCx, SIGN_HOVER],
+  [0.74, B + CROSS.islandCx, SIGN_HOVER],
   [0.77, B + 352, 144],
   [0.82, C + 40, 144],
   [0.92, C + 190, 144],

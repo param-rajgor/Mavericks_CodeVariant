@@ -27,19 +27,19 @@ export function JourneyPanel() {
   }, [projects]);
   return (
     <section className="rl-panel p-5" aria-labelledby="journey-h">
-      <h2 id="journey-h" className="mb-3 font-pixel text-2xl font-bold text-soft">
+      <h2 id="journey-h" className="mb-3 font-display text-2xl font-bold text-soft">
         Your Journey
       </h2>
       <Link to="/progress" className="flex items-center gap-4 bg-deep p-4 transition-transform hover:-translate-y-0.5">
         <PixelSprite sprite={SPROUT} px={4} />
         <span>
-          <span className="block font-title text-4xl font-bold leading-none text-soft">{projects.length}</span>
+          <span className="num block text-4xl leading-none text-soft">{projects.length}</span>
           <span className="mt-1 block text-lg font-extrabold text-soft">Projects</span>
         </span>
       </Link>
       <ul className="mt-4 space-y-2.5">
         {STATUS_ORDER.map((s) => (
-          <li key={s} className="flex items-center gap-3 text-[1.05rem] font-bold text-soft">
+          <li key={s} className="flex items-center gap-3 text-lg font-bold text-soft">
             <span aria-hidden className="size-4 shrink-0 border-2 border-night" style={{ background: STATUS_UI[s].bg }} />
             {counts[s]} {STATUS_UI[s].chip}
           </li>
@@ -54,7 +54,7 @@ export function NextStepsPanel() {
   const items = useMemo(() => suggestionsFor(projects), [projects]);
   return (
     <section className="rl-panel p-5" aria-labelledby="next-h">
-      <h2 id="next-h" className="mb-3 font-pixel text-2xl font-bold text-soft">
+      <h2 id="next-h" className="mb-3 font-display text-2xl font-bold text-soft">
         Suggested Next Steps
       </h2>
       {items.length === 0 ? (
@@ -71,8 +71,8 @@ export function NextStepsPanel() {
                     <Icon aria-hidden className="size-5" strokeWidth={2.6} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[1.05rem] font-extrabold leading-tight text-soft">{s.title}</span>
-                    <span className="block text-[0.95rem] leading-tight text-dim">{s.detail}</span>
+                    <span className="block text-lg font-extrabold leading-tight text-soft">{s.title}</span>
+                    <span className="block text-lg leading-tight text-dim">{s.detail}</span>
                   </span>
                   <ArrowRight aria-hidden className="size-5 shrink-0 text-soft" strokeWidth={3} />
                 </Link>

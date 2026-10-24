@@ -1,13 +1,14 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { FLOWER_P, FLOWER_PAL, FLOWER_W, LANTERN, LANTERN_PAL } from '@/frontend/scene/draw';
-import { at, u } from '@/frontend/scene/stage';
+import { FLOWER_P, FLOWER_PAL, FLOWER_W, LANTERN, LANTERN_PAL, meadowTop } from '@/frontend/scene/draw';
+import { ART_W, at, u } from '@/frontend/scene/stage';
 import { PixelSprite, type SpriteDef } from '@/frontend/ui/PixelSprite';
 import { CROSS, SUNRISE } from './art';
 import { NEW_OBJECT, OBJ_CODE, OBJ_DATA, OBJ_DESIGN, OBJ_DONE, OBJ_RESEARCH, OBJ_TODO } from './sprites';
+import { Signpost, signLines, useSignGroup } from './Signpost';
 import { PATHS_COPY, REASONS } from './timeline';
 
 /** Small text that stays readable on any screen: scales with the art, but never below 13px. */
-const small = (n: number): CSSProperties => ({ fontFamily: 'var(--font-ui)', fontWeight: 800, fontSize: `max(13px, ${u(n)})`, lineHeight: 1.15 });
+const small = (n: number): CSSProperties => ({ fontFamily: 'var(--font-display)', letterSpacing: '1px', fontSize: `max(20px, ${u(n * 1.45)})`, lineHeight: 1 });
 
 const outlined: CSSProperties = { textShadow: '0 2px 0 #1E1C48, 2px 0 0 #1E1C48, -2px 0 0 #1E1C48, 0 -2px 0 #1E1C48' };
 
@@ -18,13 +19,14 @@ function Spot({ x, y, children, style }: { x: number; y: number; children: React
 
 /* -------------------------------------------------------------- panel A: the graveyard */
 
+/* Kept low, just above the stones (tops at art y 128), so they clear the caption box in the top-left corner. */
 const ARTIFACTS: Array<{ sprite: SpriteDef; x: number; y: number; label: string }> = [
-  { sprite: OBJ_CODE, x: 146, y: 88, label: 'CODE' },
-  { sprite: OBJ_DESIGN, x: 176, y: 76, label: 'DESIGN' },
-  { sprite: OBJ_DATA, x: 204, y: 88, label: 'DATA' },
-  { sprite: OBJ_RESEARCH, x: 232, y: 76, label: 'RESEARCH' },
-  { sprite: OBJ_DONE, x: 260, y: 88, label: 'COMPLETED' },
-  { sprite: OBJ_TODO, x: 290, y: 76, label: 'REMAINING' },
+  { sprite: OBJ_CODE, x: 146, y: 102, label: 'CODE' },
+  { sprite: OBJ_DESIGN, x: 176, y: 92, label: 'DESIGN' },
+  { sprite: OBJ_DATA, x: 204, y: 102, label: 'DATA' },
+  { sprite: OBJ_RESEARCH, x: 232, y: 92, label: 'RESEARCH' },
+  { sprite: OBJ_DONE, x: 260, y: 102, label: 'COMPLETED' },
+  { sprite: OBJ_TODO, x: 290, y: 92, label: 'REMAINING' },
 ];
 
 /** Floating pieces of work above the stones, and sparks that lift off whichever stone the ghost is touching. */
@@ -52,36 +54,56 @@ export function GraveyardProps({ px, centers }: { px: number; centers: number[] 
 
 /* -------------------------------------------------------------- panel B: reasons and the crossroads */
 
-const REASON_X = [18, 40, 62, 84];
+/**
+ * The four reason signs (art x in panel B), equally spaced between the tree and the cliff where the bridge
+ * starts. Every other sign stands a row higher, so a board can be wider than the gap between two posts
+ * without touching its neighbours.
+ */
+export const REASON_X = [21, 39, 57, 75];
+/** Widest a board may get, in art px: two post spacings minus a gap, so same-row boards never meet. */
+const REASON_BOARD_MAX = 34;
+/** Art y where the lower row's boards end. */
+const REASON_LOW_BOTTOM = 142;
 
-/** Four small signposts beside the path: why projects sometimes stall. They light up as the ghost passes. */
-export function ReasonPosts() {
-  return (
-    <>
-      {REASONS.map((r, i) => (
-        <Spot key={r} x={REASON_X[i] - 10} y={126} style={{ width: u(20) }}>
-          <div
-            style={{
-              ...small(2.5),
-              textAlign: 'center',
-              color: '#2E1E18',
-              background: '#C89A63',
-              border: `${u(0.7)} solid #2E1E18`,
-              padding: `${u(1)} ${u(0.6)}`,
-              boxShadow: `0 0 calc(var(--rs${i}) * ${u(7)}) calc(var(--rs${i}) * ${u(1.4)}) rgba(255, 209, 102, 0.85)`,
-              filter: `brightness(calc(0.85 + var(--rs${i}) * 0.35))`,
-              minHeight: u(11),
-              display: 'grid',
-              placeItems: 'center',
-            }}
-          >
-            {r}
-          </div>
-          <div style={{ width: u(2), height: u(18), background: '#6B4A3A', margin: '0 auto' }} />
-        </Spot>
-      ))}
-    </>
-  );
+/** Four signposts beside the path: why projects sometimes stall. They light up as the ghost passes. */
+export function ReasonPosts({ s }: { s: number }) {
+  const labels = REASONS.map((r) => signLines(r, true));
+  const g = useSignGroup(labels, Math.max(20, s * 5), REASON_BOARD_MAX * s);
+  const lowTop = REASON_LOW_BOTTOM * s - g.height;
+  const highTop = lowTop - g.height - 1.5 * s;
+  // the raised signs first, so the lower boards sit in front of their posts
+  return [0, 2, 1, 3].map((i) => {
+    const top = i % 2 ? lowTop : highTop;
+    const ground = (meadowTop(REASON_X[i] + ART_W) + 1) * s;
+    return (
+      <Signpost
+        key={REASONS[i]}
+        lines={labels[i]}
+        fontSize={g.fontSize}
+        width={g.widths[i]}
+        height={g.height}
+        x={REASON_X[i] * s}
+        y={top}
+        pole={{ width: 2 * s, height: ground - top - g.height }}
+        boardStyle={{
+          boxShadow: `0 0 calc(var(--rs${i}) * ${u(7)}) calc(var(--rs${i}) * ${u(1.4)}) rgba(255, 209, 102, 0.85)`,
+          filter: `brightness(calc(0.85 + var(--rs${i}) * 0.35))`,
+        }}
+      />
+    );
+  });
+}
+
+/** Widest a path board may get, in art px: the closest two posts are 37 apart, so this leaves a gap. */
+const PATH_BOARD_MAX = 34;
+
+/** The five path signs on the island. The scene draws their posts; the boards are HTML so the text always fits. */
+export function PathSigns({ s }: { s: number }) {
+  const labels = PATHS_COPY.map((p) => signLines(p.label, false));
+  const g = useSignGroup(labels, Math.max(20, s * 4.8), PATH_BOARD_MAX * s);
+  return CROSS.posts.map((x, i) => (
+    <Signpost key={x} lines={labels[i]} fontSize={g.fontSize} width={g.widths[i]} height={g.height} x={x * s} y={(CROSS.islandTop - 33) * s} accent={CROSS.accents[i]} />
+  ));
 }
 
 /** Path glows and the fragments that become a new object. */
@@ -110,13 +132,14 @@ export function CrossroadsProps({ px }: { px: number }) {
         <Spot
           key={i}
           x={CROSS.posts[3] + dx / 4}
-          y={126 + dy / 4}
+          y={140 + dy / 4}
           style={{ width: u(3), height: u(3), background: ['#8FD3F0', '#D7F3FF', '#5FA8D8', '#BCE6F7', '#8FD3F0'][i], transform: `translate(calc((1 - var(--rp)) * ${u(dx)}), calc((1 - var(--rp)) * ${u(dy)}))`, opacity: 'calc(1 - var(--rp) * 0.95)' }}
         >
           {null}
         </Spot>
       ))}
-      <Spot x={CROSS.posts[3] - 6} y={118} style={{ opacity: 'var(--rp)', filter: 'drop-shadow(0 0 6px rgba(143,211,240,0.9))' }}>
+      {/* below the REPURPOSE board, which now sits in front of the crossroads props */}
+      <Spot x={CROSS.posts[3] - 6} y={133} style={{ opacity: 'var(--rp)', filter: 'drop-shadow(0 0 6px rgba(143,211,240,0.9))' }}>
         <div className="journey-bob">
           <PixelSprite sprite={NEW_OBJECT} px={px * 1.2} />
         </div>

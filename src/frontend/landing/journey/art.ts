@@ -220,17 +220,11 @@ export function drawIsland(c: C, cx: number, top: number, halfW: number, depth: 
   }
 }
 
-/** A signpost: pole, board with a coloured trim, and a hook. Text is added on top as real HTML. */
-function drawPost(c: C, x: number, ground: number, accent: string) {
+/** A signpost's pole. The board is HTML (Signpost), sized to its text and drawn above every scene prop. */
+function drawPost(c: C, x: number, ground: number) {
   rect(c, x - 1, ground - 26, 3, 27, '#6B4A3A');
   rect(c, x - 1, ground - 26, 1, 27, '#8C6448');
   rect(c, x + 1, ground - 26, 1, 27, '#3E2A22');
-  rect(c, x - 14, ground - 31, 29, 11, OUT);
-  rect(c, x - 13, ground - 30, 27, 9, '#8A5A3B');
-  rect(c, x - 13, ground - 30, 27, 2, accent);
-  rect(c, x - 13, ground - 22, 27, 1, '#6B4A3A');
-  px(c, x - 12, ground - 28, '#3E2A22');
-  px(c, x + 12, ground - 28, '#3E2A22');
 }
 
 function lantern(c: C, x: number, y: number, flame: string) {
@@ -331,7 +325,7 @@ export function drawGroundB(c: C) {
   drawBridge(c, CROSS.cliffX, CROSS.bridgeEnd + 2, bridgeDeckB);
   drawIsland(c, CROSS.islandCx, CROSS.islandTop, CROSS.islandHalf, 46, 11, 0.12);
   // the island's own props
-  CROSS.posts.forEach((x, i) => drawPost(c, x, CROSS.islandTop, CROSS.accents[i]));
+  CROSS.posts.forEach((x) => drawPost(c, x, CROSS.islandTop));
   // 1 · CONTINUE: vines climbing the post, flowers, a mint lantern
   {
     const x = CROSS.posts[0];

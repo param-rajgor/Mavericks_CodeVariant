@@ -14,11 +14,13 @@ export function StatusPill({ status }: { status: ProjectStatus }) {
       className="notched"
       style={{
         display: 'inline-block',
-        fontFamily: 'var(--font-ui)',
-        fontWeight: 800,
-        fontSize: 15,
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+        fontFamily: 'var(--font-display)',
+        fontSize: 22,
+        letterSpacing: 1,
         lineHeight: 1,
-        padding: '6px 12px',
+        padding: '4px 12px 5px',
         background: v.fill,
         border: `2px solid ${v.border}`,
         color: v.text,

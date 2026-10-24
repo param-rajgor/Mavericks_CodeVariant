@@ -1,57 +1,65 @@
-import type { CSSProperties, ReactElement } from 'react';
+import { memo, type CSSProperties } from 'react';
 
 export type SpriteDef = { rows: string[]; palette: Record<string, string> };
 
-/** Renders a character-grid sprite as crisp SVG pixels. `px` = screen pixels per sprite pixel. */
-export function PixelSprite({ sprite, px = 2, style }: { sprite: SpriteDef; px?: number; style?: CSSProperties }) {
+/* One <path> per colour, built from horizontal runs, instead of one <rect> per pixel. Same pixels, a fraction
+ * of the DOM nodes: the scroll story restyles its tree every frame, so node count is what makes it lag. */
+const pathCache = new WeakMap<SpriteDef, { w: number; h: number; paths: [string, string][] }>();
+
+function spritePaths(sprite: SpriteDef) {
+  const hit = pathCache.get(sprite);
+  if (hit) return hit;
   const h = sprite.rows.length;
   const w = Math.max(...sprite.rows.map((r) => r.length));
-  const cells: ReactElement[] = [];
+  const byColour = new Map<string, string>();
   sprite.rows.forEach((row, y) => {
-    for (let x = 0; x < row.length; x++) {
+    let x = 0;
+    while (x < row.length) {
       const fill = sprite.palette[row[x]];
-      if (fill) cells.push(<rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={fill} />);
+      let end = x + 1;
+      while (end < row.length && row[end] === row[x]) end++;
+      if (fill) byColour.set(fill, `${byColour.get(fill) ?? ''}M${x} ${y}h${end - x}v1h${x - end}z`);
+      x = end;
     }
   });
+  const out = { w, h, paths: [...byColour.entries()] };
+  pathCache.set(sprite, out);
+  return out;
+}
+
+/** Renders a character-grid sprite as crisp SVG pixels. `px` = screen pixels per sprite pixel. */
+export const PixelSprite = memo(function PixelSprite({ sprite, px = 2, style }: { sprite: SpriteDef; px?: number; style?: CSSProperties }) {
+  const { w, h, paths } = spritePaths(sprite);
   return (
     <svg width={w * px} height={h * px} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges" aria-hidden="true" style={{ display: 'block', ...style }}>
-      {cells}
+      {paths.map(([fill, d]) => (
+        <path key={fill} d={d} fill={fill} />
+      ))}
     </svg>
   );
-}
+});
 
 /** Drawn already tilted 45° on the grid — rotating a pixel sprite with CSS would smear it. */
 export const ROCKET: SpriteDef = {
   rows: [
-    '..........oooo..',
-    '.........olllLo.',
-    '........ollLLLo.',
-    '.......owwlLLo..',
-    '......owwwwlo...',
-    '.....owwbbwwo...',
-    '..oo.owbccbwo...',
-    '.oLLowwbccbo....',
-    '.oLLowwwbbwo....',
-    '..ooowwwwwo.....',
-    '....owgwwo.oo...',
-    '...ofoggo.oLLo..',
-    '..ofFfoo..oLLo..',
-    '.ofFrFo....oo...',
-    '.fFrf...........',
-    'ff..............',
+    '................',
+    '............ooo.',
+    '..........oowwwo',
+    '.........owwwwwo',
+    '........owwoowwo',
+    '.......owwollowo',
+    '......owwwollowo',
+    '..ooo.owwwwoowo.',
+    '.oPPPowwwwwwwo..',
+    '.oPPowwwwwwwo...',
+    '..oowwwwwwwo....',
+    '...ofowwwwoPo...',
+    '..offfowwoPPo...',
+    '.offFfooooPPo...',
+    '..fFfo...oooo...',
+    '................',
   ],
-  palette: {
-    o: '#2E2560',
-    w: '#F8F3FF',
-    g: '#C3B5E6',
-    l: '#D8B7FF',
-    L: '#B995FF',
-    b: '#57449A',
-    c: '#9C8CCB',
-    f: '#FFC94D',
-    F: '#FF8A3D',
-    r: '#E8603C',
-  },
+  palette: { o: '#1C1840', w: '#F8F3FF', l: '#C3B5E6', P: '#8A63E8', f: '#FFD166', F: '#FF8A3D' },
 };
 
 export const FOLDER: SpriteDef = {
