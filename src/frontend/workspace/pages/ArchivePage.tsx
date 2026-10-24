@@ -1,15 +1,20 @@
 import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { useDraggable } from '@dnd-kit/core';
+import { Search, GripVertical } from 'lucide-react';
 import { useProjects } from '@/backend/store/ProjectsContext';
 import { ASSET_META, STATUS_META } from '@/backend/domain/paths';
 import type { Project } from '@/backend/domain/types';
 import { useChrome } from '@/frontend/shell/AppChrome';
-import { Button, PageHeader } from '@/frontend/ui/primitives';
+import { PageHeader } from '@/frontend/ui/primitives';
 import { StatusPill } from '@/frontend/graveyard/gravestone/StatusPill';
 import { PROJECT_ICONS } from '@/frontend/graveyard/gravestone/icons';
 import { toStone } from '@/frontend/graveyard/stone';
-import { DeleteDialog, RestoreDialog } from '@/frontend/workspace/components/ProjectDialogs';
 import { EmptyArchive } from '@/frontend/workspace/components/States';
+import { DragLayer, type DragItem } from '@/frontend/dnd/DragLayer';
+import { DropZone } from '@/frontend/dnd/DropZone';
+import { SPROUT } from '@/frontend/ui/PixelSprite';
+import { CHEST_ICON } from '@/frontend/dnd/icons';
+import { useToast } from '@/frontend/ui/Toast';
 
 const monthYear = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 const monthDay = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -17,19 +22,47 @@ const fullDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { mo
 
 function ArchiveCard({ project }: { project: Project }) {
   const { openDetail } = useChrome();
-  const [restoring, setRestoring] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirm, setConfirm] = useState(false);
   const stone = toStone(project);
   const Icon = PROJECT_ICONS[stone.icon];
   const at = project.archivedAt ?? project.updatedAt;
   const prev = STATUS_META[project.previousStatus ?? 'stalled'].label;
 
+  const data: DragItem = useMemo(
+    () => ({
+      kind: 'stone',
+      label: project.name,
+      projectId: project.id,
+      archived: true,
+      preview: (
+        <div className="p-3 bg-[#1e1c48] border-2 border-lavender shadow-[0_4px_0_#14122e] text-center min-w-[160px]">
+          <span className="font-display text-lg text-soft block leading-tight">{project.name}</span>
+          <span className="text-[10px] text-dim block uppercase">Archived Project</span>
+        </div>
+      ),
+    }),
+    [project],
+  );
+
+  const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
+    id: `archive-card-${project.id}`,
+    data,
+  });
+
   return (
-    <li className="flex">
-      <article className="rl-panel flex w-full flex-col p-5" aria-labelledby={`arch-${project.id}`}>
+    <li className="flex w-full">
+      <article
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        data-draggable
+        className={`rl-panel flex w-full flex-col p-5 select-none transition-all ${
+          isDragging ? 'ghost-slot opacity-40 scale-95' : 'hover:-translate-y-1 cursor-grab'
+        }`}
+        aria-labelledby={`arch-${project.id}`}
+      >
         <header className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
+            <GripVertical className="size-4 text-dim shrink-0" />
             <span className="notched grid size-12 shrink-0 place-items-center bg-stone">
               <Icon size={26} color="#4a3e80" aria-hidden="true" />
             </span>
@@ -52,43 +85,31 @@ function ArchiveCard({ project }: { project: Project }) {
           <li>{prev} · Last worked</li>
           <li className="font-bold text-soft">Archived {monthDay(at)} · Rested</li>
         </ol>
-        <div className="mt-auto grid grid-cols-2 gap-x-3 gap-y-4 pt-6">
-          <Button variant="ghost" small onClick={() => openDetail(project.id)}>
-            Open Details
-          </Button>
-          <Button variant="ghost" small onClick={() => openDetail(project.id)}>
-            View History
-          </Button>
-          <Button variant="mint" small onClick={() => setRestoring(true)}>
-            Restore
-          </Button>
-          <Button variant="rose" small onClick={() => setConfirm(true)} aria-expanded={confirm}>
-            Delete
-          </Button>
+
+        {/* Footer: Details link + drag hint (Audit #10, #11 - primary buttons replaced by drop zones) */}
+        <div className="mt-auto pt-5 border-t border-white/10 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              openDetail(project.id);
+            }}
+            className="font-display text-base text-gold hover:underline"
+          >
+            Open Details ↗
+          </button>
+          <span className="font-display text-xs text-mint uppercase tracking-wider">
+            ✋ Drag to Action Zone
+          </span>
         </div>
-        {confirm && (
-          <div role="group" aria-label={`Confirm deleting ${project.name}`} className="mt-5 border-[3px] border-blossom bg-deep p-4">
-            <p className="text-lg font-extrabold text-soft">Delete {project.name} for good?</p>
-            <p className="mt-1 text-lg text-dim">This cannot be undone. Restore it instead if you might want it back.</p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Button variant="ghost" small onClick={() => setConfirm(false)} data-autofocus>
-                Keep it
-              </Button>
-              <Button variant="rose-solid" small onClick={() => setDeleting(true)}>
-                Delete
-              </Button>
-            </div>
-          </div>
-        )}
       </article>
-      <RestoreDialog project={project} open={restoring} onClose={() => setRestoring(false)} />
-      <DeleteDialog project={project} open={deleting} onClose={() => setDeleting(false)} onDone={() => setConfirm(false)} />
     </li>
   );
 }
 
 export function ArchivePage() {
-  const { projects } = useProjects();
+  const { projects, actions } = useProjects();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -97,25 +118,95 @@ export function ArchivePage() {
       .sort((a, b) => (b.archivedAt ?? '').localeCompare(a.archivedAt ?? ''));
   }, [projects, search]);
 
+  const handleRestore = async (item: DragItem) => {
+    if (!item.projectId) return;
+    await actions.restore(item.projectId, 'active');
+    toast.success(`${item.label} restored`, undefined, {
+      label: 'Undo',
+      run: () => void actions.undo(),
+    });
+  };
+
+  const handleDelete = async (item: DragItem) => {
+    if (!item.projectId) return;
+    await actions.remove(item.projectId);
+    toast.info(`${item.label} let go`, undefined, {
+      label: 'Undo',
+      run: () => void actions.undo(),
+    });
+  };
+
   return (
-    <div>
-      <PageHeader title="Archive" subtitle="Resting is not failing. Everything here can come back." />
-      <label className="notched mb-6 flex min-h-12 max-w-sm items-center gap-2 border-2 border-twilight bg-deep px-4">
-        <Search aria-hidden className="size-5 shrink-0 text-dim" />
-        <span className="sr-only">Search the archive</span>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search the archive..." className="w-full bg-transparent text-base font-semibold text-soft outline-none placeholder:text-[#a99fd3]" />
-      </label>
-      {rows.length === 0 ? (
-        <div className="max-w-xl">
-          <EmptyArchive />
-        </div>
-      ) : (
-        <ul className="grid gap-x-7 gap-y-8 md:grid-cols-2 xl:grid-cols-3">
-          {rows.map((p) => (
-            <ArchiveCard key={p.id} project={p} />
-          ))}
-        </ul>
-      )}
-    </div>
+    <DragLayer>
+      <div className="space-y-6">
+        <PageHeader title="Archive" subtitle="Resting is not failing. Everything here can come back." />
+
+        {/* Canvas Protocol Action Dock for Archive (Audit #10 & #11) */}
+        <section
+          aria-label="Archive Action Zones"
+          className="p-4 bg-[#141232]/95 border-2 border-lavender shadow-[0_5px_0_#0d0c1f]"
+        >
+          <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
+            <span className="font-display text-sm text-gold uppercase tracking-wider">
+              CANVAS PROTOCOL · DRAG AN ARCHIVED CARD INTO AN ACTION ZONE
+            </span>
+            <span className="text-xs text-mint font-display uppercase font-bold">
+              Action Zones Active
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <DropZone
+              id="zone-restore-archive"
+              label="BRING BACK (RESTORE)"
+              description="Drag any card here to restore it to the active graveyard"
+              color="#9ce6bd"
+              icon={SPROUT}
+              accepts={(i) => i.kind === 'stone' && !!i.projectId}
+              onDrop={handleRestore}
+              idleHint="Drop card to restore"
+              width="100%"
+              height={100}
+            />
+
+            <DropZone
+              id="zone-delete-archive"
+              label="LET GO (DELETE)"
+              description="Drag any card here to let it go. Undo available for 5 seconds."
+              color="#f6b9ab"
+              icon={CHEST_ICON}
+              accepts={(i) => i.kind === 'stone' && !!i.projectId}
+              onDrop={handleDelete}
+              idleHint="Drop card to delete (5s undo)"
+              width="100%"
+              height={100}
+            />
+          </div>
+        </section>
+
+        <label className="notched mb-6 flex min-h-12 max-w-sm items-center gap-2 border-2 border-twilight bg-deep px-4">
+          <Search aria-hidden className="size-5 shrink-0 text-dim" />
+          <span className="sr-only">Search the archive</span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search the archive..."
+            className="w-full bg-transparent text-base font-semibold text-soft outline-none placeholder:text-[#a99fd3]"
+          />
+        </label>
+
+        {rows.length === 0 ? (
+          <div className="max-w-xl">
+            <EmptyArchive />
+          </div>
+        ) : (
+          <ul className="grid gap-x-7 gap-y-8 md:grid-cols-2 xl:grid-cols-3">
+            {rows.map((p) => (
+              <ArchiveCard key={p.id} project={p} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </DragLayer>
   );
 }

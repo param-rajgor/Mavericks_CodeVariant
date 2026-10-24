@@ -15,6 +15,7 @@ import { ProjectFoundSlot } from './ProjectFoundPanel';
 import { CONTROL_BAR_H, ControlBar } from './ControlBar';
 import { Gravestone, StoneFace } from './gravestone/Gravestone';
 import { ActionDock } from './ActionDock';
+import { OnboardingHint } from './OnboardingHint';
 import { SeedPacket } from './SeedPacket';
 import { ReasonRack } from './ReasonRack';
 import { DragLayer, type DragItem } from '@/frontend/dnd/DragLayer';
@@ -213,6 +214,7 @@ function Graveyard() {
       </main>
 
       <ActionDock onSink={sink} />
+      <OnboardingHint />
       <ControlBar
         filter={filter}
         counts={counts}

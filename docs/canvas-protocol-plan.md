@@ -129,10 +129,20 @@
 - [x] Phase 2: Decision Shrine drop zones
 - [x] Phase 3: seed packet planting
 - [x] Phase 4: reason cards
-- [ ] Phase 5: polish, accessibility, performance, settings/archive/edit
+- [x] Phase 5: polish, accessibility, performance, settings/archive/edit
 
 Notes:
 - (add notes here after each phase: what changed, known issues, what's next)
+- **Phase 5 (done):**
+  - **Edit Dialog (Audit #9):** Replaced "Save changes" primary action button with a draggable Blueprint Card and a `SAVE STAMP` `DropZone` in `ProjectDialogs.tsx`. Wrapped in its own modal `DragLayer`.
+  - **Archive Page (Audit #10 & #11):** Converted archive cards into draggables. Replaced "Restore" and "Delete" primary action buttons with an Action Dock featuring two `DropZone` targets: `BRING BACK (RESTORE)` and `LET GO (DELETE)`. Deletion and restoration feature instant 5s undo toasts.
+  - **Settings Page (Audit #12 & #13):** Replaced "Download export", "Import", "Add sample projects", and "Delete everything" primary buttons with interactive draggable tokens and `DropZone` Action Zones:
+    - Backup token dragged into `DOWNLOAD BACKUP` zone.
+    - Native drag-and-drop file dropzone for `.json` backup restoration.
+    - Sample cart token dragged into `ADD SAMPLE PROJECTS` zone.
+    - Graveyard database token dragged into `CLEAR ALL LOCAL DATA` zone (with undo support).
+  - **Onboarding Hint:** Added `OnboardingHint.tsx` with a retro pixel hand pointing to the Action Dock ("DRAG A STONE TO DECIDE ITS FATE"), dismissed upon first drag or click and saved in `localStorage`.
+  - **Accessibility & Performance:** Tested keyboard sensors, reduced-motion compatibility, and verified all 54 unit tests pass with clean Vite production builds.
 - **Phase 4 (done):**
   - Created `ReasonRack` with 4 draggable stall reasons (Lack of Time, Lost Interest, Tech Hurdle, Unclear Direction).
   - Positioned the Reason Rack on the left of the dashboard graveyard scene.
