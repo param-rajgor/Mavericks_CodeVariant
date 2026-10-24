@@ -6,7 +6,7 @@ export function Heading() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' }}>
       <h1
         style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-heading)',
           fontWeight: 700,
           fontSize: 52,
           lineHeight: 1.1,

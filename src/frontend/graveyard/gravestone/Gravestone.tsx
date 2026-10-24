@@ -187,12 +187,12 @@ export function Gravestone({ project, variant, selected, layoutId, onClick, onOp
             fontFamily: 'var(--font-ui)',
           }}
         >
-          <Icon size={34} color="#4A3E80" />
+          <Icon size={38} color="#4A3E80" />
           <span
             style={{
               fontWeight: 800,
-              fontSize: 22,
-              lineHeight: 1.15,
+              fontSize: 23,
+              lineHeight: 1.12,
               color: '#2E2560',
               textAlign: 'center',
             }}

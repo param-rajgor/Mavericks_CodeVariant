@@ -11,7 +11,7 @@ function Brand({ to }: { to: string }) {
     <Link
       to={to}
       aria-label="Relaunch, back to the landing page"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, color: 'var(--color-text-primary)', textDecoration: 'none' }}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 24, color: 'var(--color-text-primary)', textDecoration: 'none' }}
     >
       <PixelSprite sprite={ROCKET} px={3} />
       RELAUNCH
@@ -65,9 +65,12 @@ interface NavBarProps {
   variant: 'landing' | 'dashboard';
   onLogin?: () => void;
   onGetStarted?: () => void;
+  /** The landing page scrolls its story; these jump to the matching chapter. */
+  onHow?: () => void;
+  onExplore?: () => void;
 }
 
-export function NavBar({ variant, onLogin, onGetStarted }: NavBarProps) {
+export function NavBar({ variant, onLogin, onGetStarted, onHow, onExplore }: NavBarProps) {
   const route = useRoute();
   const { projects } = useProjects();
 
@@ -76,12 +79,20 @@ export function NavBar({ variant, onLogin, onGetStarted }: NavBarProps) {
     return (
       <nav aria-label="Main" style={{ ...barStyle, background: 'transparent', borderBottom: 'none', padding: '18px 36px' }}>
         <Brand to="/" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 19, color: 'var(--color-text-secondary)' }} className="landing-links">
-          <Link to="/progress" style={{ color: 'inherit', textDecoration: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: 'var(--color-text-secondary)' }} className="landing-links">
+          <Link
+            to="/progress"
+            onClick={onHow ? (e) => { e.preventDefault(); onHow(); } : undefined}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
             How it Works
           </Link>
           <Sparkles size={14} style={{ color: 'var(--color-gold)' }} aria-hidden="true" />
-          <Link to="/graveyard" style={{ color: 'inherit', textDecoration: 'none' }}>
+          <Link
+            to="/graveyard"
+            onClick={onExplore ? (e) => { e.preventDefault(); onExplore(); } : undefined}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
             Explore
           </Link>
         </div>
