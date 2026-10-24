@@ -1,0 +1,87 @@
+export const STATUSES = ['active', 'stalled', 'needs-direction', 'archived'] as const;
+export type Status = (typeof STATUSES)[number];
+/** Statuses a user can pick directly; archiving has its own flow. */
+export type OpenStatus = Exclude<Status, 'archived'>;
+
+export const PATH_IDS = ['continue', 'restart', 'pivot', 'repurpose', 'archive'] as const;
+export type PathId = (typeof PATH_IDS)[number];
+
+export const ASSET_CATEGORIES = ['code', 'design', 'data', 'research', 'documentation', 'other'] as const;
+export type AssetCategory = (typeof ASSET_CATEGORIES)[number];
+
+export const STALL_REASONS = [
+  'lack-of-time',
+  'lost-interest',
+  'technical-difficulty',
+  'unclear-direction',
+  'missing-resources',
+  'competing-priorities',
+  'other',
+] as const;
+export type StallReason = (typeof STALL_REASONS)[number];
+
+export const DOMAINS = ['Software', 'Academic', 'Business', 'Creative', 'Research', 'Personal', 'Other'] as const;
+export type Domain = (typeof DOMAINS)[number];
+
+export type EventType =
+  | 'created'
+  | 'edited'
+  | 'progress-updated'
+  | 'status-changed'
+  | 'assets-changed'
+  | 'score-recalculated'
+  | 'recommendation-generated'
+  | 'path-selected'
+  | 'restarted'
+  | 'archived'
+  | 'archive-note-added'
+  | 'restored';
+
+export interface TimelineEvent {
+  id: string;
+  /** Full ISO timestamp. */
+  at: string;
+  type: EventType;
+  description: string;
+  meta?: Record<string, string | number | null>;
+  /** True for events that ship with the sample projects. */
+  demo?: boolean;
+}
+
+export type ScoreStatus = 'complete' | 'provisional' | 'insufficient';
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  domain: Domain;
+  tags: string[];
+  /** Date-only strings (YYYY-MM-DD) for user-entered dates; ISO timestamps for system dates. */
+  startedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  lastWorkedAt: string | null;
+  status: Status;
+  progress: number;
+  completedItems: string[];
+  remainingItems: string[];
+  assets: AssetCategory[];
+  assetNotes: string;
+  stallReason: StallReason | null;
+  stallReasonDetails: string;
+  /** 1 (barely) – 5 (very). */
+  currentInterest: number | null;
+  interestNote: string;
+  /** Snapshot of the last calculation; views recompute live because freshness depends on today's date. */
+  score: number | null;
+  scoreStatus: ScoreStatus;
+  recommendedPath: PathId | null;
+  selectedPath: PathId | null;
+  archiveNote: string;
+  archivedAt: string | null;
+  /** Status to offer again when a project is restored. */
+  previousStatus: OpenStatus | null;
+  timeline: TimelineEvent[];
+  /** Sample record shipped with the app, not created by the user. */
+  isDemo?: boolean;
+}
