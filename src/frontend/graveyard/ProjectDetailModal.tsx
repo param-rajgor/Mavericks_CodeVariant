@@ -83,7 +83,7 @@ export function ProjectDetailModal({ id, onClose }: { id: string | null; onClose
                   <Icon size={26} color="var(--color-stone-engraving)" />
                 </div>
                 <div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, lineHeight: 1.1 }}>{shown.stone.name}</div>
+                  <div style={{ fontFamily: 'var(--font-heading)', fontSize: 28, lineHeight: 1.1 }}>{shown.stone.name}</div>
                   <div style={{ marginTop: 6 }}>
                     <StatusPill status={shown.stone.status} />
                   </div>

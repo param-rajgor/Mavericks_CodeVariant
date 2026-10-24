@@ -1,37 +1,37 @@
 import { ART_W, ART_H, GROUND_Y, LANDING_STONE_CENTERS } from '@/frontend/scene/stage';
 
-type C = CanvasRenderingContext2D;
+export type C = CanvasRenderingContext2D;
 export type SceneVariant = 'landing' | 'dashboard';
-type Palette = Record<string, string>;
+export type Palette = Record<string, string>;
 
 /* ------------------------------------------------------------------ primitives */
 
-function px(c: C, x: number, y: number, col: string) {
+export function px(c: C, x: number, y: number, col: string) {
   c.fillStyle = col;
   c.fillRect(x, y, 1, 1);
 }
 
-function rect(c: C, x: number, y: number, w: number, h: number, col: string) {
+export function rect(c: C, x: number, y: number, w: number, h: number, col: string) {
   c.fillStyle = col;
   c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
 
-const BAYER = [
+export const BAYER = [
   [0, 8, 2, 10],
   [12, 4, 14, 6],
   [3, 11, 1, 9],
   [15, 7, 13, 5],
 ];
 /** Ordered dither: true for roughly `d` (0–1) of pixels, in a stable pattern. */
-const dither = (x: number, y: number, d: number) => (BAYER[y & 3][x & 3] + 0.5) / 16 < d;
+export const dither = (x: number, y: number, d: number) => (BAYER[y & 3][x & 3] + 0.5) / 16 < d;
 
-function hash(x: number, y: number) {
+export function hash(x: number, y: number) {
   let h = (x * 374761393 + y * 668265263) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-function rng(seed: number) {
+export function rng(seed: number) {
   let s = seed | 0;
   return () => {
     s = (s + 0x6d2b79f5) | 0;
@@ -41,12 +41,12 @@ function rng(seed: number) {
   };
 }
 
-interface Mask {
+export interface Mask {
   get(x: number, y: number): boolean;
   set(x: number, y: number): void;
 }
 
-function mask(): Mask {
+export function mask(): Mask {
   const d = new Uint8Array(ART_W * ART_H);
   const inside = (x: number, y: number) => x >= 0 && y >= 0 && x < ART_W && y < ART_H;
   return {
@@ -57,7 +57,7 @@ function mask(): Mask {
   };
 }
 
-function maskEllipse(m: Mask, cx: number, cy: number, rx: number, ry: number) {
+export function maskEllipse(m: Mask, cx: number, cy: number, rx: number, ry: number) {
   for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++)
     for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
       const nx = (x + 0.5 - cx) / rx;
@@ -66,11 +66,11 @@ function maskEllipse(m: Mask, cx: number, cy: number, rx: number, ry: number) {
     }
 }
 
-function forMask(m: Mask, fn: (x: number, y: number) => void) {
+export function forMask(m: Mask, fn: (x: number, y: number) => void) {
   for (let y = 0; y < ART_H; y++) for (let x = 0; x < ART_W; x++) if (m.get(x, y)) fn(x, y);
 }
 
-function sprite(c: C, x: number, y: number, rows: string[], pal: Palette, flip = false) {
+export function sprite(c: C, x: number, y: number, rows: string[], pal: Palette, flip = false) {
   const w = Math.max(...rows.map((r) => r.length));
   rows.forEach((raw, j) => {
     const row = raw.padEnd(w, '.');
@@ -83,7 +83,7 @@ function sprite(c: C, x: number, y: number, rows: string[], pal: Palette, flip =
 
 /** A pointed leaf rasterised on the art grid at any angle (degrees, 0 = right, -90 = up). */
 const LEAF = { outline: '#16302A', dark: '#2C5A44', light: '#3F7A58', rib: '#21473A' };
-function drawLeaf(c: C, bx: number, by: number, angleDeg: number, len: number, wid: number) {
+export function drawLeaf(c: C, bx: number, by: number, angleDeg: number, len: number, wid: number) {
   const a = (angleDeg * Math.PI) / 180;
   const ux = Math.cos(a);
   const uy = Math.sin(a);
@@ -106,19 +106,19 @@ function drawLeaf(c: C, bx: number, by: number, angleDeg: number, len: number, w
 
 /* ------------------------------------------------------------------ sprites */
 
-const TUFTS = [
+export const TUFTS = [
   ['...l...', '.l.g.l.', '.gGgGg.', 'lgGgGgg', 'gGGGGGg'],
   ['..l..l.', 'l.g.lg.', 'gGg.gGl', 'gGgGgGg'],
   ['l..l..l', 'g.lg.lg', 'gGgGgGg'],
 ];
-const TUFT_PAL: Palette = { l: '#B4D27A', g: '#93C062', G: '#5E9143' };
+export const TUFT_PAL: Palette = { l: '#B4D27A', g: '#93C062', G: '#5E9143' };
 
-const FLOWER_W = ['.w.', 'wyw', '.w.', '.G.'];
-const FLOWER_P = ['p.p', '.y.', 'p.p', '.G.'];
-const FLOWER_PAL: Palette = { w: '#F8F3FF', y: '#FFD166', p: '#EDB0D5', G: '#4C7A3A' };
+export const FLOWER_W = ['.w.', 'wyw', '.w.', '.G.'];
+export const FLOWER_P = ['p.p', '.y.', 'p.p', '.G.'];
+export const FLOWER_PAL: Palette = { w: '#F8F3FF', y: '#FFD166', p: '#EDB0D5', G: '#4C7A3A' };
 
 /* Sleeping calico, curled, head on the right, tail wrapped round the front. */
-const CAT = [
+export const CAT = [
   '..........................O.....O.....',
   '.........................OrO...OwO....',
   '........................OrrO..OwpwO...',
@@ -138,16 +138,16 @@ const CAT = [
   '.OrrrrrrrrrrrrOOOOOOOOOOOO............',
   '..OOOOOOOOOOOO........................',
 ];
-const CAT_PAL: Palette = { O: '#4A3550', w: '#F8F3FF', s: '#D3C5E6', r: '#F2A35E', R: '#C9713A', e: '#4A3550', p: '#F2A7C3' };
+export const CAT_PAL: Palette = { O: '#4A3550', w: '#F8F3FF', s: '#D3C5E6', r: '#F2A35E', R: '#C9713A', e: '#4A3550', p: '#F2A7C3' };
 
-const LANTERN = ['..ooo..', '.oDDDo.', 'ooooooo', 'oyYYYyo', 'oYWWWYo', 'oYWWWYo', 'oyYYYyo', 'ooooooo', '.oDDDo.', '...o...'];
-const LANTERN_PAL: Palette = { o: '#2E1E18', D: '#5A3F2A', y: '#E0A63A', Y: '#FFBE55', W: '#FFF1C2' };
+export const LANTERN = ['..ooo..', '.oDDDo.', 'ooooooo', 'oyYYYyo', 'oYWWWYo', 'oYWWWYo', 'oyYYYyo', 'ooooooo', '.oDDDo.', '...o...'];
+export const LANTERN_PAL: Palette = { o: '#2E1E18', D: '#5A3F2A', y: '#E0A63A', Y: '#FFBE55', W: '#FFF1C2' };
 
 const SIGN_ROCKET = ['.....ww', '....www', '..w.ww.', '...www.', '..wwww.', '.ww.w..', 'w......'];
 
 /* ------------------------------------------------------------------ 1. sky + 2. sun */
 
-const SKY: [number, string][] = [
+export const SKY: [number, string][] = [
   [0, '#24234F'],
   [18, '#28255A'],
   [34, '#2E2A66'],
@@ -172,6 +172,11 @@ const SUN: Record<SceneVariant, { cx: number; cy: number; r: number }> = {
 
 function drawSun(c: C, v: SceneVariant) {
   const { cx, cy, r } = SUN[v];
+  drawSunAt(c, cx, cy, r);
+}
+
+/** The setting / rising sun: stripe gaps across its lower half and a peach halo kept close to its edge. */
+export function drawSunAt(c: C, cx: number, cy: number, r: number) {
   // Peach glow kept close to the sun (spec: no big hazy bloom).
   const R = 6;
   for (let y = cy - r - R; y <= cy + r + R; y++)
@@ -198,7 +203,7 @@ function drawSun(c: C, v: SceneVariant) {
   }
 }
 
-export function drawSky(c: C, v: SceneVariant) {
+export function drawSky(c: C, v: SceneVariant, withSun = true) {
   SKY.forEach(([y0, col], i) => {
     const y1 = i + 1 < SKY.length ? SKY[i + 1][0] : ART_H;
     rect(c, 0, y0, ART_W, y1 - y0, col);
@@ -217,7 +222,7 @@ export function drawSky(c: C, v: SceneVariant) {
     const b = r();
     px(c, x, y, b > 0.75 ? '#F8F3FF' : b > 0.4 ? '#D8B7FF' : '#8F80C8');
   }
-  drawSun(c, v);
+  if (withSun) drawSun(c, v);
 }
 
 /* ------------------------------------------------------------------ 3. clouds */
@@ -258,7 +263,7 @@ export function drawClouds(c: C, v: SceneVariant) {
 
 /* ------------------------------------------------------------------ 4. mountains */
 
-type Layer = {
+export type Layer = {
   base: number;
   peaks: [number, number, number][];
   wob: number;
@@ -269,7 +274,7 @@ type Layer = {
   trees?: boolean;
 };
 
-const MOUNTAINS: Record<SceneVariant, Layer[]> = {
+export const MOUNTAINS: Record<SceneVariant, Layer[]> = {
   landing: [
     { base: 118, peaks: [[30, 14, 50], [110, 12, 48], [196, 16, 40], [282, 28, 58], [360, 14, 40]], wob: 1.2, seed: 1, fill: '#8F7BCB', hi: '#BBA0DA', shade: '#7C69BC' },
     { base: 132, peaks: [[14, 12, 40], [88, 9, 38], [168, 12, 40], [246, 9, 36], [326, 15, 46]], wob: 1, seed: 4, fill: '#6A58AE', hi: '#8E79C8', shade: '#58499C' },
@@ -282,7 +287,7 @@ const MOUNTAINS: Record<SceneVariant, Layer[]> = {
   ],
 };
 
-function ridgeAt(L: Layer, x: number) {
+export function ridgeAt(L: Layer, x: number) {
   let h = 0;
   for (const [cx, ph, pw] of L.peaks) {
     const d = Math.abs(x - cx) / pw;
@@ -291,8 +296,9 @@ function ridgeAt(L: Layer, x: number) {
   return Math.round(L.base - h + L.wob * Math.sin(x / 9 + L.seed) + L.wob * 0.6 * Math.sin(x / 4.3 + L.seed * 2));
 }
 
-function drawMountains(c: C, v: SceneVariant) {
+export function drawMountains(c: C, v: SceneVariant, only?: number) {
   MOUNTAINS[v].forEach((L, i) => {
+    if (only !== undefined && only !== i) return;
     for (let x = 0; x < ART_W; x++) {
       let t = ridgeAt(L, x);
       if (L.trees && hash(x >> 2, 3) > 0.45) t -= [1, 2, 2, 1][x & 3];
@@ -555,6 +561,11 @@ function drawLaptopBooks(c: C) {
 
 export function drawLand(c: C, v: SceneVariant) {
   drawMountains(c, v);
+  drawLandFront(c, v);
+}
+
+/** Everything in the back layer that stands on the ground: castle, meadow, tree, sign, rock and cat. */
+export function drawLandFront(c: C, v: SceneVariant) {
   if (v === 'dashboard') drawCastle(c);
   drawMeadow(c, v, v === 'landing' ? LANDING_STONE_CENTERS : []);
   if (v === 'landing') {

@@ -12,7 +12,7 @@ export function Hero({ onEnter }: { onEnter: () => void }) {
         />
         <h1
           style={{
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-heading)',
             fontWeight: 700,
             fontSize: 'clamp(40px, 4.7vw, 88px)',
             lineHeight: 1.08,
@@ -36,8 +36,10 @@ export function Hero({ onEnter }: { onEnter: () => void }) {
       </div>
       <p
         style={{
-          fontFamily: 'var(--font-vt)',
-          fontSize: 'clamp(22px, 2.1vw, 38px)',
+          fontFamily: 'var(--font-ui)',
+          fontWeight: 700,
+          lineHeight: 1.35,
+          fontSize: 'clamp(19px, 1.7vw, 30px)',
           color: 'var(--color-text-primary)',
           textShadow: pixelOutline('rgba(30,28,72,0.85)', 1, 2),
           marginTop: 16,

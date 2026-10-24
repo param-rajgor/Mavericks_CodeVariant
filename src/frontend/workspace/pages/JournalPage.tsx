@@ -33,7 +33,7 @@ export function JourneyPanel() {
       <Link to="/progress" className="flex items-center gap-4 bg-deep p-4 transition-transform hover:-translate-y-0.5">
         <PixelSprite sprite={SPROUT} px={4} />
         <span>
-          <span className="block font-pixel text-4xl font-bold leading-none text-soft">{projects.length}</span>
+          <span className="block font-title text-4xl font-bold leading-none text-soft">{projects.length}</span>
           <span className="mt-1 block text-lg font-extrabold text-soft">Projects</span>
         </span>
       </Link>

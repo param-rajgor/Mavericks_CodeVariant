@@ -12,7 +12,7 @@ export const STONE_GAP_ART = 10; // 50px / 5
 export const STONE_ROW_X = 124;
 export const LANDING_STONE_CENTERS = [0, 1, 2, 3].map((i) => STONE_ROW_X + i * (STONE_ART_W + STONE_GAP_ART) + STONE_ART_W / 2);
 
-function measure() {
+export function measure() {
   const w = window.innerWidth;
   const h = window.innerHeight;
   // Cover the viewport, anchored to the bottom so the ground line never moves off-screen.
