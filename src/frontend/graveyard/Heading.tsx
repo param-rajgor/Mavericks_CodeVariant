@@ -37,7 +37,7 @@ export function Heading() {
         }}
       >
         <span style={{ width: 8, height: 8, flexShrink: 0, background: 'var(--color-lavender)', transform: 'rotate(45deg)' }} />
-        Every little idea gets a place to rest — and a chance to rise again.
+        Every little idea gets a place to rest, and a chance to rise again.
         <span style={{ width: 8, height: 8, flexShrink: 0, background: 'var(--color-lavender)', transform: 'rotate(45deg)' }} />
       </div>
     </div>
