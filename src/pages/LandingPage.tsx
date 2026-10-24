@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { AnimatePresence } from "motion/react";
 import { Header } from "@/src/landing/components/Header";
-import { ScrollVideoBackground } from "@/src/landing/components/ScrollVideoBackground";
+import { PixelLandscapeBackground } from "@/src/landing/components/PixelLandscapeBackground";
 import { PixelBackground } from "@/src/landing/components/PixelBackground";
 import { GhostCursor } from "@/src/landing/components/GhostCursor";
 import { HeroSection } from "@/src/landing/sections/HeroSection";
@@ -159,8 +159,8 @@ export function LandingPage() {
 
   return (
     <div className="landing-root min-h-screen bg-navy text-soft selection:bg-lavender selection:text-navy">
-      {/* Background Video with delicate pixel mist overlays */}
-      <ScrollVideoBackground />
+      {/* Clean Handcrafted Pixel Art Landscape Background (No baked text or blurry duplicate buttons) */}
+      <PixelLandscapeBackground />
 
       {/* Floating Stars and Golden Fireflies */}
       <PixelBackground />
