@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { NewProjectDialog } from '@/frontend/workspace/components/NewProjectDialog';
+import { SeedFormModal } from '@/frontend/graveyard/SeedFormModal';
 import { ProjectDetailModal } from '@/frontend/graveyard/ProjectDetailModal';
 
 /**
@@ -28,7 +28,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   return (
     <ChromeCtx.Provider value={value}>
       {children}
-      <NewProjectDialog open={newOpen} onClose={() => setNewOpen(false)} />
+      <SeedFormModal open={newOpen} onClose={() => setNewOpen(false)} />
       <ProjectDetailModal id={detailId} onClose={() => setDetailId(null)} />
     </ChromeCtx.Provider>
   );

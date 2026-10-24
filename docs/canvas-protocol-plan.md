@@ -127,12 +127,19 @@
 ## Progress log
 - [x] Phase 1: store + dnd-kit + Action Dock + undo
 - [x] Phase 2: Decision Shrine drop zones
-- [ ] Phase 3: seed packet planting
+- [x] Phase 3: seed packet planting
 - [ ] Phase 4: reason cards
 - [ ] Phase 5: polish, accessibility, performance, settings/archive/edit
 
 Notes:
 - (add notes here after each phase: what changed, known issues, what's next)
+- **Phase 3 (done):**
+  - Replaced `+ PLANT A PROJECT` buttons in `ControlBar`, `GraveyardPage`, and `States` (Audit #1, #2) with draggable `SeedPacket`.
+  - Replaced `NewProjectDialog` multi-step wizard with `SeedFormModal` (Audit #3).
+  - Seed Form includes a shake animation (`shake-anim`) when the name is empty.
+  - Sowing into the graveyard is executed via dragging the filled Seed Card into the "Fertile Soil" `DropZone` Action Zone (zero primary submit/save buttons).
+  - Grow-up sprout-to-stone animation (`sprout-grow-anim`) plays upon sowing.
+  - Landing finale `BRING AN IDEA BACK TO LIFE →` replaced with a plain link to the graveyard (Audit #14).
 - **Phase 2 (done):**
   - Decision Shrine transformed into a guided 5-step flow with top progress stepper (`LookBackStep`, `LookAroundStep`, `LookInsideStep`, `YourScoreStep`, `ChoosePathStep`).
   - GitHub market signals & inspiration repo evaluator integrated in Step 2.

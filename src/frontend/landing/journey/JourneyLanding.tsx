@@ -425,9 +425,9 @@ export function JourneyLanding({ stones, onEnter }: Props) {
               Your next chapter starts with one small decision.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 22, marginTop: 20 }}>
-              <PixelButton variant="gold" size="lg" onClick={plant}>
+              <a href="#/graveyard" className="journey-link" style={{ color: 'var(--color-gold)' }}>
                 BRING AN IDEA BACK TO LIFE →
-              </PixelButton>
+              </a>
               <button type="button" className="journey-link" onClick={() => jump(0)}>
                 EXPLORE THE GRAVEYARD AGAIN
               </button>

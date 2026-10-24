@@ -13,6 +13,7 @@ import { ProjectFoundSlot } from './ProjectFoundPanel';
 import { CONTROL_BAR_H, ControlBar } from './ControlBar';
 import { Gravestone, StoneFace } from './gravestone/Gravestone';
 import { ActionDock } from './ActionDock';
+import { SeedPacket } from './SeedPacket';
 import { DragLayer, type DragItem } from '@/frontend/dnd/DragLayer';
 import { matchesFilter, toStone, type FilterId, type Stone } from './stone';
 
@@ -141,9 +142,9 @@ function Graveyard() {
             <div className="rl-panel rl-panel-hi" style={{ padding: 28, maxWidth: 420, textAlign: 'center' }}>
               <h2 className="rl-title" style={{ fontSize: 28 }}>Your graveyard is waiting for its first idea.</h2>
               <p style={{ margin: '12px 0 18px', color: 'var(--color-text-secondary)', fontSize: 17 }}>Add one unfinished project to begin.</p>
-              <button type="button" className="rl-btn rl-btn-gold" onClick={openNew}>
-                + PLANT A PROJECT
-              </button>
+              <div style={{ marginTop: 12 }}>
+                <SeedPacket onClick={openNew} />
+              </div>
             </div>
           ) : (
             <>

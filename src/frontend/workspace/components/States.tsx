@@ -1,5 +1,6 @@
 import { PixelSprite, SPROUT, type SpriteDef } from '@/frontend/ui/PixelSprite';
 import { Button } from '@/frontend/ui/primitives';
+import { SeedPacket } from '@/frontend/graveyard/SeedPacket';
 
 const ROCK: SpriteDef = {
   rows: ['....oooooooo....', '..ooRRRRRRRRoo..', '.oRRRRrrRRRRRRo.', 'oRRRRRRRRRRRrRRo', 'oRrRRRRRRRRRRRRo', 'oooooooooooooooo'],
@@ -19,10 +20,8 @@ export function EmptyGraveyard({ onNew, filtered = false }: { onNew: () => void;
     <Box>
       <PixelSprite sprite={SPROUT} px={5} />
       <h2 className="rl-title max-w-sm text-2xl">{filtered ? 'No ideas match that.' : 'Your graveyard is waiting for its first idea.'}</h2>
-      <p className="text-sm text-dim">{filtered ? 'Try another filter or a different search.' : 'Add one unfinished project to begin.'}</p>
-      <Button variant="gold" onClick={onNew}>
-        New Project
-      </Button>
+      <p className="text-sm text-dim">{filtered ? 'Try another filter or a different search.' : 'Grab a seed packet to plant an unfinished project.'}</p>
+      <SeedPacket onClick={onNew} />
     </Box>
   );
 }

@@ -617,6 +617,27 @@ body.dnd-active [data-stone] .stone-glow { filter: none !important; }
 @keyframes stone-sink { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(60px); opacity: 0; } }
 .stone-sink { animation: stone-sink 300ms ease-in forwards; }
 
+/* Seed Form shake animation on empty name error */
+@keyframes seed-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.shake-anim {
+  animation: seed-shake 320ms ease-in-out;
+  border-color: var(--color-coral) !important;
+}
+
+/* Grow-up sprout-to-stone animation */
+@keyframes sprout-grow {
+  0% { transform: translateY(40px) scale(0.6); opacity: 0; }
+  50% { transform: translateY(-8px) scale(1.1); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.sprout-grow-anim {
+  animation: sprout-grow 450ms cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .drag-lift { transform: none; }
   .drop-zone--valid, .drop-zone__icon--bounce, .drop-zone__burst, .stone-sink { animation: none !important; }

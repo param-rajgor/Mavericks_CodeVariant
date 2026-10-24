@@ -1,5 +1,5 @@
-import { Search, Sprout } from 'lucide-react';
-import { PixelButton } from '@/frontend/ui/PixelButton';
+import { Search } from 'lucide-react';
+import { SeedPacket } from './SeedPacket';
 import { FILTER_LABELS, type FilterId } from './stone';
 
 interface ControlBarProps {
@@ -62,16 +62,10 @@ export function ControlBar({ filter, counts, onFilterChange, search, onSearchCha
         />
       </label>
 
-      {/* 36px plus the button's 4px pixel border on each side = 44px */}
-      <PixelButton
-        variant="lavender"
-        size="sm"
-        onClick={onPlant}
-        cornerIcon={<Sprout size={16} style={{ color: 'var(--color-grass-light)' }} />}
-        style={{ height: ROW_H - 8, minHeight: ROW_H - 8, margin: '0 4px 0 auto', flexShrink: 0 }}
-      >
-        + PLANT A PROJECT
-      </PixelButton>
+      {/* Draggable Seed Packet replacing + PLANT A PROJECT button (Audit #1) */}
+      <div style={{ margin: '0 4px 0 auto', flexShrink: 0 }}>
+        <SeedPacket onClick={onPlant} />
+      </div>
     </div>
   );
 }
