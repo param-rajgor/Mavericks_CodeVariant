@@ -1,0 +1,335 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Relaunch design system. One file: tokens, base, pixel primitives, ambient motion.
+   Source values: docs/design-spec.md §6 (colour), §7 (type), §8 (pixel rules).
+   ========================================================================== */
+
+/* Tailwind utility names (bg-panel, text-gold, font-pixel ...) read from here. */
+@theme {
+  --color-night: #24234f;
+  --color-navy: #24234f;
+  --color-panel: #2a2563;
+  --color-indigo-deep: #2a2563;
+  --color-panel-2: #34316c;
+  --color-deep: #1e1c48;
+  --color-twilight: #57449a;
+  --color-rule: #57449a;
+  --color-violet: #8170c8;
+  --color-lavender: #b995ff;
+  --color-lavender-bright: #d8b7ff;
+  --color-button-purple: #8a63e8;
+  --color-gold: #ffd166;
+  --color-button-gold: #ffc94d;
+  --color-peach: #f6b9ab;
+  --color-blossom: #edb0d5;
+  --color-rose: #edb0d5;
+  --color-mint: #9ce6bd;
+  --color-sky: #9fb4ee;
+  --color-grass: #76a84f;
+  --color-cream: #f8f3ff;
+  --color-soft: #f8f3ff;
+  --color-dim: #ded5f4;
+  --color-ink: #2e2560;
+  --color-stone: #c3b5e6;
+
+  --font-sans: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-pixel: "Pixelify Sans", ui-monospace, monospace;
+  --font-title: "Pixelify Sans", ui-monospace, monospace;
+}
+
+:root {
+  /* Backgrounds and sky */
+  --color-night-indigo: #24234f;
+  --color-panel-indigo: #2a2563;
+  --color-deep-panel: #1e1c48;
+  --color-dark-purple: #34316c;
+  --color-mid-purple: #57449a;
+  --color-twilight-violet: #8170c8;
+  --color-horizon-pink: #efa8b6;
+  --color-peach-glow: #f6b9ab;
+
+  /* Stones */
+  --color-stone-light-edge: #e2d8f7;
+  --color-stone-shade: #9c8ccb;
+  --color-stone-deep-shade: #7a6aae;
+  --color-stone-outline: #3a2f6e;
+  --color-stone-engraving: #4a3e80;
+
+  /* Accents */
+  --color-lantern-gold: #ffbe55;
+  --color-soft-pink: #edb0d5;
+
+  /* Text */
+  --color-text-primary: #f8f3ff;
+  --color-text-secondary: #ded5f4;
+  --color-text-dark: #2e2560;
+
+  /* Status pills: fill / border / text */
+  --status-stalled-fill: #f7b39c;
+  --status-stalled-border: #d9806a;
+  --status-stalled-text: #6e2a22;
+  --status-in-progress-fill: #a9e8bf;
+  --status-in-progress-border: #5fb37e;
+  --status-in-progress-text: #1f5534;
+  --status-to-revisit-fill: #ffd36e;
+  --status-to-revisit-border: #d9a23a;
+  --status-to-revisit-text: #5a3b0c;
+  --status-archived-fill: #ece4fb;
+  --status-archived-border: #a796d8;
+  --status-archived-text: #4b3f7a;
+
+  /* Grass */
+  --color-grass-highlight: #b4d27a;
+  --color-grass-light: #93c062;
+  --color-grass-mid: #76a84f;
+  --color-grass-dark: #5e9143;
+  --color-grass-deep: #4c7a3a;
+
+  /* Fonts (plain variables, used by the scene and landing components) */
+  --font-display: "Pixelify Sans", ui-monospace, monospace;
+  --font-vt: "VT323", ui-monospace, monospace;
+  --font-ui: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Every sprite, notch and shadow is a multiple of this. */
+  --pixel-unit: 4px;
+  --notch: var(--pixel-unit);
+  --focus: #ffd166;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--color-night-indigo);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { cursor: pointer; font-family: inherit; }
+h1, h2, h3 { text-wrap: balance; }
+img, canvas, svg.pixel-art { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+/* Visible focus everywhere, in the interaction gold. */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+::selection { background: var(--color-lavender); color: var(--color-text-dark); }
+.scrollbar-thin { scrollbar-width: thin; scrollbar-color: var(--color-mid-purple) transparent; }
+
+/* ==========================================================================
+   Pixel primitives
+   ========================================================================== */
+
+/* Stepped corners: one "pixel" cut from each corner. Combine with a solid background and border. */
+.notched {
+  clip-path: polygon(
+    var(--notch) 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% calc(100% - var(--notch)),
+    calc(100% - var(--notch)) 100%, var(--notch) 100%, 0 calc(100% - var(--notch)), 0 var(--notch)
+  );
+}
+
+/* Hard-edged offset shadow, no blur. (Not used together with clip-path, which would hide it.) */
+.hard-shadow {
+  --shadow-color: var(--color-stone-outline);
+  box-shadow: var(--pixel-unit) var(--pixel-unit) 0 0 var(--shadow-color);
+}
+
+/* A notched pixel frame made only of box-shadows, so the hard drop shadow stays visible. */
+.pixel-frame {
+  --bc: var(--color-mid-purple);
+  --sh: #14123a;
+  margin: 4px;
+  box-shadow:
+    -4px 0 0 0 var(--bc), 4px 0 0 0 var(--bc), 0 -4px 0 0 var(--bc), 0 4px 0 0 var(--bc),
+    0 8px 0 0 var(--sh), -4px 4px 0 0 var(--sh), 4px 4px 0 0 var(--sh);
+}
+
+/* Panels */
+.rl-panel {
+  --bc: var(--color-mid-purple);
+  --sh: #14123a;
+  position: relative;
+  margin: 4px;
+  background: var(--color-panel-indigo);
+  color: var(--color-text-primary);
+  box-shadow:
+    -4px 0 0 0 var(--bc), 4px 0 0 0 var(--bc), 0 -4px 0 0 var(--bc), 0 4px 0 0 var(--bc),
+    0 8px 0 0 var(--sh), -4px 4px 0 0 var(--sh), 4px 4px 0 0 var(--sh);
+}
+.rl-panel-hi { --bc: var(--color-lavender); background: var(--color-deep-panel); }
+.rl-panel-flat {
+  margin: 4px;
+  background: rgba(42, 37, 99, 0.82);
+  box-shadow: -4px 0 0 0 var(--color-mid-purple), 4px 0 0 0 var(--color-mid-purple), 0 -4px 0 0 var(--color-mid-purple), 0 4px 0 0 var(--color-mid-purple);
+}
+.rl-panel-rose { --bc: var(--status-stalled-border); }
+
+/* Buttons: notched, a hard shadow underneath, lift on hover, press down on click. */
+.rl-btn {
+  --bc: var(--color-stone-outline);
+  --sh: var(--color-stone-outline);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  margin: 4px;
+  padding: 0.5rem 1.1rem;
+  border: 0;
+  background: var(--color-lavender);
+  color: var(--color-text-dark);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.1;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: -4px 0 0 0 var(--bc), 4px 0 0 0 var(--bc), 0 -4px 0 0 var(--bc), 0 4px 0 0 var(--bc), 0 8px 0 0 var(--sh);
+  transition: transform 120ms steps(3), box-shadow 120ms steps(3);
+}
+.rl-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: -4px 0 0 0 var(--bc), 4px 0 0 0 var(--bc), 0 -4px 0 0 var(--bc), 0 4px 0 0 var(--bc), 0 10px 0 0 var(--sh);
+}
+.rl-btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: -4px 0 0 0 var(--bc), 4px 0 0 0 var(--bc), 0 -4px 0 0 var(--bc), 0 4px 0 0 var(--bc), 0 4px 0 0 var(--sh);
+}
+.rl-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.rl-btn-gold { background: var(--color-button-gold); --sh: var(--status-stalled-border); }
+.rl-btn-purple { background: var(--color-lavender); }
+.rl-btn-mint { background: var(--color-mint); --bc: var(--status-in-progress-border); }
+.rl-btn-sky { background: var(--color-sky); }
+.rl-btn-ghost { background: var(--color-panel-indigo); color: var(--color-text-primary); --bc: var(--color-lavender); }
+.rl-btn-rose { background: var(--color-night-indigo); color: var(--color-soft-pink); --bc: var(--color-soft-pink); }
+.rl-btn-rose-solid { background: var(--color-soft-pink); --bc: var(--status-stalled-border); }
+.rl-btn-sm { min-height: 38px; padding: 0.35rem 0.8rem; font-size: 0.875rem; }
+
+/* Inputs */
+.rl-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  background: var(--color-deep-panel);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-mid-purple);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.rl-input::placeholder { color: #a99fd3; }
+.rl-input:focus { border-color: var(--color-gold); outline: none; }
+.rl-input[aria-invalid="true"] { border-color: var(--status-stalled-border); background: #2f1f3f; }
+select.rl-input option { background: var(--color-deep-panel); color: var(--color-text-primary); }
+
+/* Small labels, chips and pills */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-lavender);
+  white-space: nowrap;
+}
+.rl-chipbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0 1rem;
+  font-weight: 800;
+  font-size: 0.875rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 2px solid var(--color-stone-outline);
+  white-space: nowrap;
+  transition: transform 100ms steps(2), background-color 100ms steps(2);
+}
+.rl-chipbtn:hover { background: var(--color-panel-2); color: var(--color-text-primary); }
+.rl-chipbtn[aria-pressed="true"] { background: var(--color-lavender); color: var(--color-text-dark); border-color: var(--color-text-primary); transform: translateY(2px); }
+
+.rl-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1;
+  border: 2px solid var(--color-stone-outline);
+  white-space: nowrap;
+}
+
+/* Headings and small caps */
+.rl-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--color-text-primary);
+  text-shadow: 2px 2px 0 var(--color-stone-outline), -2px -2px 0 var(--color-stone-outline), 2px -2px 0 var(--color-stone-outline), -2px 2px 0 var(--color-stone-outline), 4px 4px 0 var(--color-stone-outline);
+}
+.pixel-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.rl-meta { font-size: 0.78rem; font-weight: 700; color: var(--color-text-secondary); }
+
+/* ==========================================================================
+   Ambient scene motion. Lengths use --s (screen px per art px) from the scene Stage.
+   ========================================================================== */
+@keyframes px-twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes px-firefly {
+  0% { transform: translate(0, 0); opacity: 0.15; }
+  25% { opacity: 1; }
+  50% { transform: translate(calc(var(--s) * 4px), calc(var(--s) * -5px)); opacity: 0.55; }
+  75% { opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 0.15; }
+}
+@keyframes px-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes px-fall {
+  0% { transform: translate(0, 0); opacity: 0; }
+  8% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(calc(var(--s) * -16px), calc(var(--s) * 70px)); opacity: 0; }
+}
+@keyframes px-z {
+  0% { transform: translate(0, 0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(calc(var(--s) * 4px), calc(var(--s) * -10px)); opacity: 0; }
+}
+@keyframes px-drift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(calc(var(--s) * 6px)); } }
+@keyframes px-sway { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(calc(var(--s) * 1px)); } }
+@keyframes px-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.rl-btn-lg { min-height: 56px; padding: 0.8rem 1.6rem; font-size: 1.15rem; }
+
+/* Navigation: tabs keep their labels on wide screens and shrink to icons on narrow ones. */
+.nav-tab:hover { background: var(--color-panel-2); color: var(--color-text-primary); }
+.nav-tab[aria-current="page"]:hover { background: var(--color-lavender); color: var(--color-text-dark); }
+@media (max-width: 1180px) { .nav-extra { display: none !important; } }
+@media (max-width: 900px) { .nav-divider { display: none; } .landing-links { display: none !important; } }
+
+/* Small screens: the tabs drop to their own row, and the landing bar keeps only what fits. */
+@media (max-width: 760px) {
+  .nav-left { flex-wrap: wrap; row-gap: 10px; }
+  .nav-tabs { order: 3; flex: 1 1 100%; }
+  .landing-login { display: none; }
+}
+@media (max-width: 1100px) { .found-panel { position: static !important; display: flex; justify-content: center; margin-top: 16px; } }
