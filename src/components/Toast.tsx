@@ -8,18 +8,25 @@ interface Toast {
   kind: Kind;
   title: string;
   message?: string;
+  action?: ToastAction;
+}
+
+export interface ToastAction {
+  label: string;
+  run: () => void;
 }
 
 interface ToastApi {
-  success(title: string, message?: string): void;
+  success(title: string, message?: string, action?: ToastAction): void;
   error(title: string, message?: string): void;
-  info(title: string, message?: string): void;
+  info(title: string, message?: string, action?: ToastAction): void;
 }
 
 const Ctx = createContext<ToastApi | null>(null);
 
 const ICON = { success: CheckCircle2, error: AlertTriangle, info: Info } as const;
-const COLOR: Record<Kind, string> = { success: 'bg-[#E3F6E0] text-[#1D5A2C]', error: 'bg-[#FFE6D9] text-[#8A3A12]', info: 'bg-[#EADFFB] text-[#48279A]' };
+/** Dark toast with a coloured frame and a square swatch; the text label always says what happened. */
+const FRAME: Record<Kind, string> = { success: '#a8e6a1', error: '#ff9db5', info: '#dcd6f7' };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -27,20 +34,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const push = useCallback(
-    (kind: Kind, title: string, message?: string) => {
+    (kind: Kind, title: string, message?: string, action?: ToastAction) => {
       const id = ++idRef.current;
-      setToasts((t) => [...t.slice(-3), { id, kind, title, message }]);
+      setToasts((t) => [...t.slice(-3), { id, kind, title, message, action }]);
       // Errors stay until dismissed so nobody misses a failed save.
-      if (kind !== 'error') window.setTimeout(() => dismiss(id), 5000);
+      if (kind !== 'error') window.setTimeout(() => dismiss(id), action ? 8000 : 5000);
     },
     [dismiss],
   );
 
   const api = useMemo<ToastApi>(
     () => ({
-      success: (t, m) => push('success', t, m),
+      success: (t, m, a) => push('success', t, m, a),
       error: (t, m) => push('error', t, m),
-      info: (t, m) => push('info', t, m),
+      info: (t, m, a) => push('info', t, m, a),
     }),
     [push],
   );
@@ -61,14 +68,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.2 }}
                 role={t.kind === 'error' ? 'alert' : 'status'}
-                className={`rl-panel pointer-events-auto flex w-full max-w-sm items-start gap-3 p-3 ${COLOR[t.kind]}`}
+                className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-xl bg-night p-3 text-cream shadow-[0_5px_0_#0d0e2b]"
+                style={{ border: `3px solid ${FRAME[t.kind]}` }}
               >
-                <Icon aria-hidden className="mt-0.5 size-5 shrink-0" />
+                <span aria-hidden className="size-3.5 shrink-0" style={{ background: FRAME[t.kind] }} />
+                <Icon aria-hidden className="sr-only" />
                 <div className="min-w-0 flex-1 text-sm">
-                  <p className="font-bold">{t.title}</p>
-                  {t.message && <p className="mt-0.5">{t.message}</p>}
+                  <p className="font-extrabold">{t.title}</p>
+                  {t.message && <p className="mt-0.5 text-dim">{t.message}</p>}
                 </div>
-                <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss notification" className="-m-2 grid size-11 place-items-center rounded">
+                {t.action && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      t.action!.run();
+                      dismiss(t.id);
+                    }}
+                    className="min-h-11 rounded-md px-2 font-mono text-xs font-bold text-gold underline-offset-4 hover:underline"
+                  >
+                    {t.action.label}
+                  </button>
+                )}
+                <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss notification" className="-m-2 grid size-11 place-items-center rounded text-dim hover:text-cream">
                   <X aria-hidden className="size-4" />
                 </button>
               </motion.div>

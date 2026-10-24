@@ -4,15 +4,16 @@ import { useSyncExternalStore, type AnchorHTMLAttributes, type ReactNode } from 
 
 export type Route =
   | { name: 'landing' }
-  | { name: 'overview' }
   | { name: 'projects' }
+  | { name: 'graveyard' }
+  | { name: 'insights' }
+  | { name: 'decision'; id?: string }
+  | { name: 'archive' }
+  | { name: 'progress' }
+  | { name: 'settings' }
+  /** Deep links that open a dialog over My Projects. */
   | { name: 'new' }
   | { name: 'project'; id: string }
-  | { name: 'decision'; id: string }
-  | { name: 'paths' }
-  | { name: 'timeline'; project?: string }
-  | { name: 'archive' }
-  | { name: 'data' }
   | { name: 'not-found' };
 
 function read(): string {
@@ -34,17 +35,19 @@ export function matchRoute(location: string): Route {
   const seg = path.split('/').filter(Boolean).map(decodeURIComponent);
   const [a, b, c] = seg;
   if (seg.length === 0) return { name: 'landing' };
-  if (a === 'app' && seg.length === 1) return { name: 'overview' };
+  if (a === 'app' && seg.length === 1) return { name: 'projects' };
+  if (a === 'graveyard' && seg.length === 1) return { name: 'graveyard' };
+  if (a === 'insights' && seg.length === 1) return { name: 'insights' };
+  if (a === 'decision' && seg.length === 1) return { name: 'decision', id: params.get('project') ?? undefined };
+  if (a === 'archive' && seg.length === 1) return { name: 'archive' };
+  if (a === 'progress' && seg.length === 1) return { name: 'progress' };
+  if ((a === 'settings' || a === 'data') && seg.length === 1) return { name: 'settings' };
   if (a === 'projects') {
-    if (seg.length === 1) return { name: 'projects' };
+    if (seg.length === 1) return { name: 'graveyard' };
     if (b === 'new' && seg.length === 2) return { name: 'new' };
     if (seg.length === 2) return { name: 'project', id: b };
     if (seg.length === 3 && c === 'decision') return { name: 'decision', id: b };
   }
-  if (a === 'paths' && seg.length === 1) return { name: 'paths' };
-  if (a === 'timeline' && seg.length === 1) return { name: 'timeline', project: params.get('project') ?? undefined };
-  if (a === 'archive' && seg.length === 1) return { name: 'archive' };
-  if (a === 'data' && seg.length === 1) return { name: 'data' };
   return { name: 'not-found' };
 }
 

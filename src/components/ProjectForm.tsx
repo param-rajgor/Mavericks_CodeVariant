@@ -51,7 +51,7 @@ function TagInput({ tags, onChange, id, describedBy }: { tags: string[]; onChang
           {tags.map((t) => (
             <li key={t} className="chip !pr-1">
               {t}
-              <button type="button" onClick={() => onChange(tags.filter((x) => x !== t))} aria-label={`Remove tag ${t}`} className="grid size-6 place-items-center rounded-full hover:bg-lavender/40">
+              <button type="button" onClick={() => onChange(tags.filter((x) => x !== t))} aria-label={`Remove tag ${t}`} className="grid size-6 place-items-center rounded-full hover:bg-twilight">
                 <X aria-hidden className="size-3" />
               </button>
             </li>
@@ -135,7 +135,7 @@ export function ProgressSection({ draft, errors, onChange }: SectionProps) {
           {ASSET_CATEGORIES.map((a) => {
             const on = draft.assets.includes(a);
             return (
-              <label key={a} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-md border-2 px-3 text-sm font-bold ${on ? 'border-twilight bg-[#ece7fb]' : 'border-line bg-white'}`}>
+              <label key={a} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-md border-2 px-3 text-sm font-bold ${on ? 'border-lavender bg-[#2b2a6d]' : 'border-rule bg-panel-2'}`}>
                 <input
                   type="checkbox"
                   checked={on}
@@ -158,13 +158,13 @@ export function ProgressSection({ draft, errors, onChange }: SectionProps) {
 export function StoppedSection({ draft, errors, onChange, showStatus = true }: SectionProps & { showStatus?: boolean }) {
   return (
     <div className="space-y-5">
-      <p className="rounded-md bg-[#E3F6E0] p-3 text-sm text-[#1D5A2C]">Projects stall for ordinary reasons. Naming yours helps you decide what to do next, with no judgement.</p>
+      <p className="rounded-md bg-[#17361f] p-3 text-sm text-mint">Projects stall for ordinary reasons. Naming yours helps you decide what to do next, with no judgement.</p>
       <Group legend="Why did it stop?" error={errors.stallReason}>
         <div className="grid gap-2 sm:grid-cols-2">
           {STALL_REASONS.map((r: StallReason, i) => {
             const on = draft.stallReason === r;
             return (
-              <label key={r} className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-md border-2 p-3 ${on ? 'border-twilight bg-[#ece7fb]' : 'border-line bg-white'}`}>
+              <label key={r} className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-md border-2 p-3 ${on ? 'border-lavender bg-[#2b2a6d]' : 'border-rule bg-panel-2'}`}>
                 <input
                   type="radio"
                   name="stall-reason"
@@ -177,7 +177,7 @@ export function StoppedSection({ draft, errors, onChange, showStatus = true }: S
                 />
                 <span>
                   <span className="block text-sm font-extrabold">{STALL_REASON_META[r].label}</span>
-                  <span className="block text-xs text-muted">{STALL_REASON_META[r].hint}</span>
+                  <span className="block text-xs text-dim">{STALL_REASON_META[r].hint}</span>
                 </span>
               </label>
             );
@@ -219,11 +219,11 @@ export function InterestSection({ draft, errors, onChange }: SectionProps) {
           {[1, 2, 3, 4, 5].map((n) => {
             const on = draft.currentInterest === n;
             return (
-              <label key={n} className={`flex min-h-11 cursor-pointer flex-col items-center gap-1 rounded-md border-2 p-3 text-center ${on ? 'border-twilight bg-[#ece7fb]' : 'border-line bg-white'}`}>
+              <label key={n} className={`flex min-h-11 cursor-pointer flex-col items-center gap-1 rounded-md border-2 p-3 text-center ${on ? 'border-lavender bg-[#2b2a6d]' : 'border-rule bg-panel-2'}`}>
                 <input type="radio" name="interest" checked={on} onChange={() => onChange({ currentInterest: n })} className="size-4 accent-twilight" data-autofocus={n === 1 ? true : undefined} />
                 <span className="font-mono text-lg font-semibold">{n}</span>
                 <span className="text-xs font-extrabold">{INTEREST_LABELS[n].label}</span>
-                <span className="text-[11px] leading-tight text-muted">{INTEREST_LABELS[n].hint}</span>
+                <span className="text-[11px] leading-tight text-dim">{INTEREST_LABELS[n].hint}</span>
               </label>
             );
           })}

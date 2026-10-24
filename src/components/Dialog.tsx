@@ -5,6 +5,9 @@ import { X } from 'lucide-react';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Open dialogs, innermost last, so only the top one reacts to keys. */
+const stack: symbol[] = [];
+
 /** Traps Tab inside `ref`, closes on Escape, locks page scroll, and returns focus to the opener. */
 export function useModalBehavior(ref: RefObject<HTMLElement | null>, open: boolean, onClose: () => void) {
   const closeRef = useRef(onClose);
@@ -12,6 +15,8 @@ export function useModalBehavior(ref: RefObject<HTMLElement | null>, open: boole
 
   useEffect(() => {
     if (!open) return;
+    const me = Symbol('modal');
+    stack.push(me);
     const opener = document.activeElement as HTMLElement | null;
     const node = ref.current;
     const prevOverflow = document.body.style.overflow;
@@ -21,6 +26,7 @@ export function useModalBehavior(ref: RefObject<HTMLElement | null>, open: boole
     (first ?? node)?.focus();
 
     const onKey = (e: KeyboardEvent) => {
+      if (stack[stack.length - 1] !== me) return;
       if (e.key === 'Escape') {
         e.stopPropagation();
         closeRef.current();
@@ -45,6 +51,7 @@ export function useModalBehavior(ref: RefObject<HTMLElement | null>, open: boole
     document.addEventListener('keydown', onKey, true);
     return () => {
       document.removeEventListener('keydown', onKey, true);
+      stack.splice(stack.indexOf(me), 1);
       document.body.style.overflow = prevOverflow;
       opener?.focus?.();
     };
@@ -89,29 +96,29 @@ function DialogBody({ onClose, title, description, children, footer, size = 'md'
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
-        className={`rl-panel relative flex max-h-[92svh] w-full flex-col ${WIDTH[size]} rounded-b-none sm:rounded-b-md`}
+        className={`rl-panel relative flex max-h-[92svh] w-full flex-col ${WIDTH[size]} rounded-b-none sm:rounded-b-xl`}
         initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 12, scale: 0.98 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
       >
-        <header className="flex items-start gap-3 border-b-2 border-line p-4 sm:p-5">
+        <header className="flex items-start gap-3 border-b-[3px] border-rule p-4 sm:p-5">
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-lg font-extrabold leading-snug">
+            <h2 id={titleId} className="rl-title text-2xl">
               {title}
             </h2>
             {description && (
-              <p id={descId} className="mt-1 text-sm text-muted">
+              <p id={descId} className="mt-2 text-sm text-dim">
                 {description}
               </p>
             )}
           </div>
-          <button type="button" onClick={onClose} aria-label="Close dialog" className="-m-1 grid size-11 shrink-0 place-items-center rounded-md hover:bg-[#f1ecff]">
+          <button type="button" onClick={onClose} aria-label="Close dialog" className="-m-1 grid size-11 shrink-0 place-items-center rounded-md text-cream hover:bg-panel-2">
             <X aria-hidden className="size-5" />
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">{children}</div>
-        {footer && <footer className="flex flex-wrap justify-end gap-2 border-t-2 border-line p-4 sm:px-5">{footer}</footer>}
+        {footer && <footer className="flex flex-wrap justify-end gap-2 border-t-[3px] border-rule p-4 sm:px-5">{footer}</footer>}
       </motion.div>
     </div>
   );

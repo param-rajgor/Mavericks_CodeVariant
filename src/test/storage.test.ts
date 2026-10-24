@@ -26,9 +26,9 @@ describe('IndexedDB persistence', () => {
   it('writes many at once, deletes one, and clears all', async () => {
     const ps = demoProjects();
     await putProjects(ps);
-    expect(await getAllProjects()).toHaveLength(4);
+    expect(await getAllProjects()).toHaveLength(12);
     await deleteProject(ps[0].id);
-    expect(await getAllProjects()).toHaveLength(3);
+    expect(await getAllProjects()).toHaveLength(11);
     await clearProjects();
     expect(await getAllProjects()).toEqual([]);
   });
