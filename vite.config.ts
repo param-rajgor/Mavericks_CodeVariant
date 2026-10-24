@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
   base: './',
   plugins: [react(), tailwindcss()],
-  // "@" is the project root, e.g. import x from "@/src/domain/types"
-  resolve: { alias: { '@': fileURLToPath(new URL('.', import.meta.url)) } },
+  // "@" is the src folder, e.g. import { analyzeProject } from "@/backend/domain/analysis"
+  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   test: { environment: 'node', include: ['src/**/*.test.ts'] },
 });
