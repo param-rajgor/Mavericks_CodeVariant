@@ -1,6 +1,9 @@
 import type { Domain, Project, Status } from '@/backend/domain/types';
 import { ASSET_META, STALL_REASON_META } from '@/backend/domain/paths';
 import { ago } from '@/backend/domain/insights';
+import { lastDecision } from '@/backend/domain/ops';
+import { PATHS } from '@/backend/domain/paths';
+import type { StallReason } from '@/backend/domain/types';
 
 /**
  * How a project looks on a gravestone. The graveyard page and the landing page both read the
@@ -24,6 +27,20 @@ export interface Stone {
   reusable: string;
   /** SocialPulse: vines and a gold glow at rest on the landing page. */
   featured: boolean;
+  /** The most recent drop-to-decide, e.g. "Restart · just now". */
+  lastDecision: string | null;
+  /** Reasons pinned on the project (reason cards). */
+  reasons: StallReason[];
+}
+
+/** "just now", "5 min ago", "3 h ago", or the day-level wording for anything older. */
+export function sinceShort(iso: string, now = new Date()): string {
+  const mins = Math.floor((now.getTime() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  if (mins < 24 * 60) return `${Math.floor(mins / 60)} h ago`;
+  const days = Math.floor(mins / (24 * 60));
+  return days === 1 ? 'yesterday' : days < 30 ? `${days} days ago` : days < 365 ? `${Math.floor(days / 30)} mo ago` : `${Math.floor(days / 365)} yr ago`;
 }
 
 export const STONE_STATUS: Record<Status, StoneStatus> = {
@@ -63,6 +80,11 @@ export function toStone(p: Project, now = new Date()): Stone {
     whyStalled: why,
     reusable,
     featured: p.name === 'SocialPulse',
+    lastDecision: (() => {
+      const d = lastDecision(p);
+      return d ? `${PATHS[d.path].label} · ${sinceShort(d.at, now)}` : null;
+    })(),
+    reasons: p.reasons ?? (p.stallReason ? [p.stallReason] : []),
   };
 }
 

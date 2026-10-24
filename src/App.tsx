@@ -9,6 +9,7 @@ import { LandingPage } from '@/frontend/landing/LandingPage';
 import { GraveyardTransition } from '@/frontend/landing/GraveyardTransition';
 import { GraveyardPage } from '@/frontend/graveyard/GraveyardPage';
 import { AppChrome } from '@/frontend/shell/AppChrome';
+import { UndoKeys } from '@/frontend/shell/UndoKeys';
 import { WorkspaceShell } from '@/frontend/shell/WorkspaceShell';
 import { JournalPage } from '@/frontend/workspace/pages/JournalPage';
 import { InsightsPage } from '@/frontend/workspace/pages/InsightsPage';
@@ -119,7 +120,12 @@ function Gate() {
         </div>
       </div>
     );
-  return <Routes />;
+  return (
+    <>
+      <UndoKeys />
+      <Routes />
+    </>
+  );
 }
 
 export default function App() {

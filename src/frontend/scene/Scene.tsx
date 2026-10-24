@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Stage } from '@/frontend/scene/stage';
 import { PixelCanvas } from '@/frontend/scene/PixelCanvas';
 import { drawSky, drawClouds, drawLand, drawFrontGrass, drawFrontLeaves, type SceneVariant } from '@/frontend/scene/draw';
@@ -21,8 +22,9 @@ const AMBIENT = {
 };
 
 /** Back layers 1–8: sky, sun, clouds, mountains, meadow, tree, sign, cat — one
- * coherent, full-width pixel-art world with no crops or seams. */
-export function Scene({ variant }: { variant: SceneVariant }) {
+ * coherent, full-width pixel-art world with no crops or seams. Memoised: it must never
+ * re-render while something is being dragged over it. */
+export const Scene = memo(function Scene({ variant }: { variant: SceneVariant }) {
   const a = AMBIENT[variant];
   return (
     <Stage>
@@ -36,7 +38,7 @@ export function Scene({ variant }: { variant: SceneVariant }) {
       {variant === 'dashboard' && <Fireflies points={a.fireflies} />}
     </Stage>
   );
-}
+});
 
 /** Front layers 10–12, drawn over the stones: grass and flowers at the stone bases,
  * corner leaves, fireflies. */

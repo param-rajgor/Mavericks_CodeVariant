@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProjects } from '@/backend/store/ProjectsContext';
@@ -10,7 +11,9 @@ import { useChrome } from '@/frontend/shell/AppChrome';
 import { Heading } from './Heading';
 import { ProjectFoundSlot } from './ProjectFoundPanel';
 import { CONTROL_BAR_H, ControlBar } from './ControlBar';
-import { Gravestone } from './gravestone/Gravestone';
+import { Gravestone, StoneFace } from './gravestone/Gravestone';
+import { ActionDock } from './ActionDock';
+import { DragLayer, type DragItem } from '@/frontend/dnd/DragLayer';
 import { matchesFilter, toStone, type FilterId, type Stone } from './stone';
 
 const PER_PAGE = 6;
@@ -32,7 +35,41 @@ function useRowZoom() {
   return w >= 900 ? Math.min(1, (w - 48 - 16) / row) : Math.min(1, (w - 24) / (3 * STONE_W + 2 * GAP));
 }
 
+/** A stone that is also a data card: drag it onto an Action Zone, or click it to look. */
+const DraggableStone = memo(function DraggableStone({ stone, selected, tooltip, onToggle }: { stone: Stone; selected: boolean; tooltip: boolean; onToggle: (id: string) => void }) {
+  const data = useMemo<DragItem>(
+    () => ({
+      kind: 'stone',
+      label: stone.name,
+      projectId: stone.id,
+      archived: stone.status === 'Archived',
+      preview: (
+        <div style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: 127, height: 121 }}>
+          <StoneFace project={stone} />
+        </div>
+      ),
+    }),
+    [stone],
+  );
+  const { setNodeRef, listeners, attributes, isDragging } = useDraggable({ id: `stone-${stone.id}`, data });
+  const drag = useMemo(() => ({ setNodeRef, listeners, attributes, isDragging }), [setNodeRef, listeners, attributes, isDragging]);
+  const click = useCallback(() => onToggle(stone.id), [onToggle, stone.id]);
+  return (
+    <div className={isDragging ? 'ghost-slot' : undefined}>
+      <Gravestone project={stone} variant="dashboard" layoutId={`stone-${stone.id}`} selected={selected} tooltip={tooltip && !isDragging} onClick={click} drag={drag} />
+    </div>
+  );
+});
+
 export function GraveyardPage() {
+  return (
+    <DragLayer>
+      <Graveyard />
+    </DragLayer>
+  );
+}
+
+function Graveyard() {
   const { projects } = useProjects();
   const route = useRoute();
   const { openNew, openDetail } = useChrome();
@@ -72,6 +109,16 @@ export function GraveyardPage() {
   const visible = stones.slice(safePage * PER_PAGE, safePage * PER_PAGE + PER_PAGE);
   const selected = stones.find((s) => s.id === selectedId) ?? null;
   const closePanel = useCallback(() => setSelectedId(null), []);
+  const toggle = useCallback((id: string) => setSelectedId((cur) => (cur === id ? null : id)), []);
+  // archived stones sink into the ground for 300ms before the list re-sorts
+  const [sinking, setSinking] = useState<string | null>(null);
+  const sinkTimer = useRef(0);
+  const sink = useCallback((id: string) => {
+    setSinking(id);
+    clearTimeout(sinkTimer.current);
+    sinkTimer.current = window.setTimeout(() => setSinking(null), 320);
+  }, []);
+  useEffect(() => () => clearTimeout(sinkTimer.current), []);
 
   return (
     <div style={{ position: 'fixed', inset: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', paddingBottom: CONTROL_BAR_H + 14 }}>
@@ -110,15 +157,9 @@ export function GraveyardPage() {
                       animate={{ opacity: ok ? 1 : 0.25, y: ok ? 0 : 10, scale: 1 }}
                       transition={{ duration: 0.25, delay: i * 0.05, ease: 'easeOut' }}
                     >
-                      <Gravestone
-                        project={s}
-                        variant="dashboard"
-                        layoutId={`stone-${s.id}`}
-                        selected={selectedId === s.id}
-                        tooltip={!selected}
-                        onClick={() => setSelectedId((id) => (id === s.id ? null : s.id))}
-                        onOpenProject={() => setSelectedId(s.id)}
-                      />
+                      <div className={sinking === s.id ? 'stone-sink' : undefined}>
+                        <DraggableStone stone={s} selected={selectedId === s.id} tooltip={!selected} onToggle={toggle} />
+                      </div>
                     </motion.li>
                   );
                 })}
@@ -141,6 +182,7 @@ export function GraveyardPage() {
         </div>
       </main>
 
+      <ActionDock onSink={sink} />
       <ControlBar
         filter={filter}
         counts={counts}

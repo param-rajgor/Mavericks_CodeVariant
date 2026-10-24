@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       const id = ++idRef.current;
       setToasts((t) => [...t.slice(-3), { id, kind, title, message, action }]);
       // Errors stay until dismissed so nobody misses a failed save.
-      if (kind !== 'error') window.setTimeout(() => dismiss(id), action ? 8000 : 5000);
+      if (kind !== 'error') window.setTimeout(() => dismiss(id), 5000);
     },
     [dismiss],
   );
