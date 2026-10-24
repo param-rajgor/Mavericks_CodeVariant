@@ -126,13 +126,22 @@
 
 ## Progress log
 - [x] Phase 1: store + dnd-kit + Action Dock + undo
-- [ ] Phase 2: Decision Shrine drop zones
+- [x] Phase 2: Decision Shrine drop zones
 - [ ] Phase 3: seed packet planting
 - [ ] Phase 4: reason cards
 - [ ] Phase 5: polish, accessibility, performance, settings/archive/edit
 
 Notes:
 - (add notes here after each phase: what changed, known issues, what's next)
+- **Phase 2 (done):**
+  - Decision Shrine transformed into a guided 5-step flow with top progress stepper (`LookBackStep`, `LookAroundStep`, `LookInsideStep`, `YourScoreStep`, `ChoosePathStep`).
+  - GitHub market signals & inspiration repo evaluator integrated in Step 2.
+  - 6-question gut check questionnaire integrated in Step 3.
+  - Three-part clear score breakdown (The Project, You, The World) in Step 4.
+  - The 5 path cards converted to Action Zones on glowing pixel pedestals with `DropZone` in Step 5.
+  - Draggable Crossroads Keystone project card added; primary action buttons ("Choose This Path", click-to-select, and archive confirmation) completely eliminated.
+  - Concrete next-step plan task checklist, revisit reminder scheduler, and decision history timeline added.
+  - Wrapped in `<DragLayer>`; instant undo toast upon drop.
 - **Phase 1 (done):**
   - Store (`backend/store/ProjectsContext.tsx`): `decide`, `addReason`, `removeReason`, `resetSamples`, `undo`, `canUndo`.
     - Each change snapshots the list first (20 deep).

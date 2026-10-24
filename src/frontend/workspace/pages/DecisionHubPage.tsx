@@ -1,112 +1,49 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { stepsForPath, projectToInput, WEIGHTS, type FactorKey } from '@/backend/domain/analysis';
-import { PATH_LIST, PATHS, STALL_REASON_META, INTEREST_LABELS } from '@/backend/domain/paths';
-import type { PathId, Project } from '@/backend/domain/types';
-import { STATUS_UI, ago, liveAnalysis } from '@/backend/domain/insights';
+import { useState, useMemo, useEffect } from 'react';
+import { ChevronDown, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { useProjects } from '@/backend/store/ProjectsContext';
 import { navigate, useRoute } from '@/frontend/routing/router';
-import { Button, PageHeader } from '@/frontend/ui/primitives';
+import { PageHeader } from '@/frontend/ui/primitives';
 import { EmptyGraveyard } from '@/frontend/workspace/components/States';
-import { ArchiveDialog } from '@/frontend/workspace/components/ProjectDialogs';
-import { useSafe, useToast } from '@/frontend/ui/Toast';
 import { useChrome } from '@/frontend/shell/AppChrome';
-import { PixelSprite, SPROUT } from '@/frontend/ui/PixelSprite';
+import { DragLayer } from '@/frontend/dnd/DragLayer';
+import { LookBackStep } from './decision/LookBackStep';
+import { LookAroundStep } from './decision/LookAroundStep';
+import { LookInsideStep } from './decision/LookInsideStep';
+import { YourScoreStep } from './decision/YourScoreStep';
+import { ChoosePathStep } from './decision/ChoosePathStep';
+import { liveAnalysis } from '@/backend/domain/insights';
 
-const FACTOR_COLOR: Record<FactorKey, string> = {
-  completion: '#7fd4ff',
-  recoverableReason: '#a8e6a1',
-  reusableAssets: '#f1a0e8',
-  freshness: '#ffc857',
-  currentInterest: '#c9a8ff',
-};
+type StepNumber = 1 | 2 | 3 | 4 | 5;
 
-const SEGMENTS = 10;
-
-function ScoreBars({ project }: { project: Project }) {
-  const a = liveAnalysis(project);
-  const points = a.factors.map((f) => (f.value == null ? null : Math.round(((f.value * f.weight) / 100) * 10) / 10));
-  const complete = a.status === 'complete';
-  return (
-    <section className="rl-panel p-5" aria-labelledby="score-h">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 id="score-h" className="text-xl font-extrabold text-soft">
-            Relaunch Score
-          </h2>
-          <p className="mt-1 max-w-[13rem] text-base leading-snug text-cream">A guide built from five visible factors. It is not a prediction.</p>
-        </div>
-        <p className="flex items-baseline gap-1 whitespace-nowrap">
-          <span className="num text-6xl leading-none text-gold" aria-label={a.total == null ? 'No score yet' : `Score ${a.total}${a.status === 'provisional' ? ', provisional' : ''}`}>
-            {a.total ?? '—'}
-            {a.status === 'provisional' && '*'}
-          </span>
-          <span className="num text-sm text-dim">/100</span>
-        </p>
-      </div>
-      <ul className="mt-5 space-y-4">
-        {a.factors.map((f, i) => {
-          const filled = f.value == null ? 0 : Math.round((f.value / 100) * SEGMENTS);
-          return (
-            <li key={f.key}>
-              <p className="flex items-baseline justify-between gap-2 text-lg font-extrabold text-soft">
-                <span>
-                  {f.label} <span className="text-sm font-medium text-dim">· weight {WEIGHTS[f.key]}</span>
-                </span>
-                <span className="shrink-0 whitespace-nowrap num text-lg" aria-label={points[i] == null ? 'not known' : `${points[i]} of ${f.weight}`}>
-                  {points[i] ?? '—'} / {f.weight}
-                </span>
-              </p>
-              <div className="mt-1.5 flex gap-1" aria-hidden>
-                {Array.from({ length: SEGMENTS }, (_, k) => (
-                  <span key={k} className="h-3 flex-1 rounded-[2px]" style={{ background: k < filled ? FACTOR_COLOR[f.key] : '#2b2a6d' }} />
-                ))}
-              </div>
-              <p className="mt-1.5 text-base leading-snug text-cream">{f.explanation}</p>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="mt-5 text-sm leading-relaxed text-dim">
-        {complete
-          ? `${points.map((p) => p ?? 0).join(' + ')} = ${a.total}.`
-          : a.status === 'provisional'
-            ? `Known factors are scaled to 100. `
-            : 'Add progress and a reason to see a score. '}
-        Scores are provisional when details are missing.
-      </p>
-    </section>
-  );
-}
+const STEPS: { num: StepNumber; label: string; title: string }[] = [
+  { num: 1, label: 'Look Back', title: 'The Facts' },
+  { num: 2, label: 'Look Around', title: 'GitHub Signals' },
+  { num: 3, label: 'Look Inside', title: 'Questionnaire' },
+  { num: 4, label: 'Your Score', title: '3-Part Score' },
+  { num: 5, label: 'Choose Path', title: 'Action Shrines' },
+];
 
 export function DecisionHubPage() {
   const route = useRoute();
-  const { projects, actions } = useProjects();
+  const { projects } = useProjects();
   const { openNew } = useChrome();
-  const safe = useSafe();
-  const toast = useToast();
-  const open = useMemo(() => projects.filter((p) => p.status !== 'archived'), [projects]);
+  const openProjects = useMemo(() => projects.filter((p) => p.status !== 'archived'), [projects]);
   const wanted = route.name === 'decision' ? route.id : undefined;
 
-  // Without a project in the link, start with the open project that most needs a decision.
+  // Fallback to highest-priority project
   const fallback = useMemo(() => {
-    const undecided = open.filter((p) => !p.selectedPath);
-    const pool = undecided.length ? undecided : open;
+    const undecided = openProjects.filter((p) => !p.selectedPath);
+    const pool = undecided.length ? undecided : openProjects;
     return [...pool].sort((a, b) => (liveAnalysis(b).total ?? -1) - (liveAnalysis(a).total ?? -1))[0]?.id;
-  }, [open]);
+  }, [openProjects]);
+
   const [picked, setPicked] = useState<string | undefined>(wanted);
   useEffect(() => setPicked(wanted), [wanted]);
   const project = projects.find((p) => p.id === (picked ?? fallback));
 
-  const analysis = project ? liveAnalysis(project) : null;
-  const rec = analysis?.recommendation?.path ?? null;
-  const [viewing, setViewing] = useState<PathId | null>(null);
-  const [archiving, setArchiving] = useState(false);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => setViewing(null), [project?.id]);
-  const current: PathId = viewing ?? project?.selectedPath ?? rec ?? 'continue';
+  const [currentStep, setCurrentStep] = useState<StepNumber>(1);
 
-  if (!project || !analysis) {
+  if (!project) {
     return (
       <div className="mx-auto max-w-5xl">
         <PageHeader title="Decision Shrine" subtitle="Every idea reaches a crossroads. Pick the path that fits." />
@@ -115,170 +52,137 @@ export function DecisionHubPage() {
     );
   }
 
-  const input = projectToInput(project);
-  const archived = project.status === 'archived';
-  const ui = STATUS_UI[project.status];
-  const meta = PATHS[current];
-  const chosen = project.selectedPath === current;
-  const steps = analysis.recommendation?.path === current ? analysis.nextSteps : stepsForPath(input, current);
-  const reasons = analysis.recommendation?.path === current ? analysis.recommendation.reasons.slice(0, 2).join(' ') : meta.bestWhen;
-
-  const choose = async () => {
-    if (current === 'archive') {
-      setArchiving(true);
-      return;
-    }
-    setBusy(true);
-    const saved = await safe(() => actions.choosePath(project.id, current), 'Could not save your choice');
-    setBusy(false);
-    if (saved) toast.success(`${project.name}: path chosen`, `${meta.label}. Recorded in its timeline; you can change it any time.`);
-  };
-
   return (
-    <div className="mx-auto max-w-[88rem]">
-      <PageHeader title="Decision Shrine" subtitle="Every idea reaches a crossroads. Pick the path that fits." />
+    <DragLayer>
+      <div className="mx-auto max-w-[88rem] space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <PageHeader
+            title="Decision Shrine"
+            subtitle="A guided five-step crossroads journey. Drag your keystone to seal its fate."
+          />
 
-      <div className="grid gap-5 lg:grid-cols-[18.5rem_1fr]">
-        <div className="space-y-5">
-          <section className="rl-panel p-5" aria-labelledby="cross-h">
-            <h2 id="cross-h" className="text-lg font-extrabold text-soft">
-              Project at the crossroads
-            </h2>
-            <label className="relative mt-3 block">
-              <span className="sr-only">Choose a project</span>
-              <select
-                value={project.id}
-                onChange={(e) => {
-                  setPicked(e.target.value);
-                  navigate(`/decision?project=${e.target.value}`, { replace: true });
-                }}
-                className="h-14 w-full appearance-none  border-[3px] border-lavender bg-[#f3eaff] pl-4 pr-11 text-lg font-extrabold text-night"
-              >
-                {open.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-                {archived && <option value={project.id}>{project.name} (archived)</option>}
-              </select>
-              <ChevronDown aria-hidden className="pointer-events-none absolute right-3.5 top-1/2 size-5 -translate-y-1/2 text-twilight" strokeWidth={3} />
-            </label>
-            <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
-              <div>
-                <dt className="font-display text-xl tracking-[1px] text-dim">STATUS</dt>
-                <dd className="mt-1">
-                  <span className="rl-status" style={{ background: ui.bg, color: ui.fg }}>
-                    {ui.chip}
-                  </span>
-                </dd>
-              </div>
-              <div>
-                <dt className="font-display text-xl tracking-[1px] text-dim">PROGRESS</dt>
-                <dd className="mt-1 font-display text-2xl leading-none tracking-wide text-soft">{project.progress}%</dd>
-              </div>
-              <div>
-                <dt className="font-display text-xl tracking-[1px] text-dim">LAST</dt>
-                <dd className="mt-1 font-display text-2xl leading-none tracking-wide text-soft">{ago(project)}</dd>
-              </div>
-              <div>
-                <dt className="font-display text-xl tracking-[1px] text-dim">INTEREST</dt>
-                <dd className="mt-1 font-display text-2xl leading-none tracking-wide text-soft">{project.currentInterest ? INTEREST_LABELS[project.currentInterest].label : '—'}</dd>
-              </div>
-            </dl>
-            <p className="mt-3 text-sm text-cream">
-              {project.stallReasonDetails ||
-                (project.stallReason ? `Stalled because of ${STALL_REASON_META[project.stallReason].label.toLowerCase()}.` : 'No reason recorded yet.')}
-            </p>
-          </section>
-          <ScoreBars project={project} />
+          {/* Project Switcher */}
+          <div className="relative min-w-[240px]">
+            <span className="sr-only">Choose a project</span>
+            <select
+              value={project.id}
+              onChange={(e) => {
+                setPicked(e.target.value);
+                navigate(`/decision?project=${e.target.value}`, { replace: true });
+              }}
+              className="h-12 w-full appearance-none border-[3px] border-lavender bg-[#f3eaff] pl-4 pr-10 text-base font-extrabold text-night font-display"
+            >
+              {openProjects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} {p.selectedPath ? '✓' : ''}
+                </option>
+              ))}
+              {project.status === 'archived' && (
+                <option value={project.id}>{project.name} (archived)</option>
+              )}
+            </select>
+            <ChevronDown
+              aria-hidden
+              className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-twilight"
+              strokeWidth={3}
+            />
+          </div>
         </div>
 
-        <div className="min-w-0">
-          <div role="radiogroup" aria-label="Choose a path" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {PATH_LIST.map((p, i) => {
-              const on = current === p.id;
-              const isRec = rec === p.id;
-              const assets = new Set(project.assets).size;
+        {/* Stepper Progress Bar */}
+        <div className="rl-panel p-4 border-[3px] border-twilight shadow-[0_5px_0_#14122e]">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {STEPS.map((s) => {
+              const active = currentStep === s.num;
+              const completed = currentStep > s.num;
               return (
                 <button
-                  key={p.id}
+                  key={s.num}
                   type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => setViewing(p.id)}
-                  className="relative flex min-h-[15rem] flex-col  p-5 text-left transition-transform hover:-translate-y-1"
-                  style={{
-                    background: '#1e1c48',
-                    border: `3px solid ${on ? p.accent : '#57449a'}`,
-                    boxShadow: on ? `0 5px 0 #14123a, 0 0 0 2px #1e1c48, 0 0 18px ${p.accent}66` : '0 5px 0 #14123a',
-                  }}
+                  onClick={() => setCurrentStep(s.num)}
+                  className={`p-3 text-left transition-all border-2 flex flex-col justify-between ${
+                    active
+                      ? 'bg-[#25225c] border-gold shadow-[0_3px_0_#9a7000]'
+                      : completed
+                        ? 'bg-[#151438] border-mint/50 opacity-90'
+                        : 'bg-[#151438] border-twilight/50 opacity-60 hover:opacity-90'
+                  }`}
                 >
-                  <span className="flex items-center gap-2">
-                    <span className="px-2.5 pb-1 pt-0.5 font-display text-[22px] leading-none tracking-[1px] text-night" style={{ background: p.accent }}>
-                      Path {i + 1}
+                  <div className="flex items-center justify-between">
+                    <span className="font-display text-xs tracking-wider text-dim">
+                      STEP {s.num}
                     </span>
-                    {isRec && <span className="bg-gold px-2.5 pb-1 pt-0.5 font-display text-[22px] leading-none tracking-[1px] text-night">Recommended</span>}
-                  </span>
-                  <span className="mt-3 block font-display text-[3.25rem] leading-[0.9] tracking-[1px] [text-shadow:0_3px_0_#14122E]" style={{ color: p.accent }}>
-                    {p.label}
-                  </span>
-                  <span className="mt-3 block text-lg leading-snug text-cream">{p.tagline}</span>
-                  <span className="mt-3 block text-lg font-semibold leading-snug text-gold">Best when {p.bestWhen.charAt(0).toLowerCase() + p.bestWhen.slice(1)}</span>
-                  <span className="mt-auto block pt-4 font-display text-2xl uppercase leading-tight tracking-[1px]" style={{ color: on ? p.accent : '#DED5F4' }}>
-                    {on
-                      ? p.id === 'repurpose'
-                        ? `Selected · ${assets} reusable asset${assets === 1 ? '' : 's'}`
-                        : project.selectedPath === p.id
-                          ? 'Chosen ✓'
-                          : 'Selected'
-                      : `Next: ${(stepsForPath(input, p.id)[0] ?? '').replace(/^./, (c) => c.toLowerCase())}`}
-                  </span>
+                    {completed ? (
+                      <span className="text-mint font-bold text-xs">✓</span>
+                    ) : active ? (
+                      <span className="text-gold text-xs animate-pulse">●</span>
+                    ) : null}
+                  </div>
+                  <div>
+                    <span
+                      className="font-display text-lg tracking-wide block leading-tight mt-1"
+                      style={{ color: active ? '#ffd166' : completed ? '#a8e6a1' : '#f8f3ff' }}
+                    >
+                      {s.label}
+                    </span>
+                    <span className="text-[11px] text-dim block">{s.title}</span>
+                  </div>
                 </button>
               );
             })}
-
-            <section className=" p-5" style={{ background: '#1e1c48', border: '3px solid #9fb4ee', boxShadow: '0 5px 0 #14123a' }} aria-labelledby="why-h">
-              <h2 id="why-h" className="font-display text-[2.25rem] leading-none tracking-[1px] text-sky">
-                Why {meta.label} fits
-              </h2>
-              <p className="mt-2 text-base leading-normal text-cream">{reasons}</p>
-              <ol className="mt-4 space-y-3">
-                {steps.map((s, i) => (
-                  <li key={s} className="flex items-start gap-3">
-                    <span className="grid size-7 shrink-0 place-items-center  bg-sky num text-xl text-night">{i + 1}</span>
-                    <span className="text-base leading-normal text-soft">{s}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
           </div>
+        </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-4  border-[3px] border-twilight bg-panel p-4 shadow-[0_5px_0_#14123a]">
-            <PixelSprite sprite={SPROUT} px={4} />
-            <p className="min-w-0 flex-1 text-lg font-bold leading-snug text-soft">
-              {archived ? (
-                <>
-                  {project.name} is archived. Restore it from the Archive to choose a new path.
-                </>
-              ) : (
-                <>
-                  You picked <span style={{ color: meta.accent }}>{meta.label}</span> for {project.name}. Nothing is deleted, and you can change the path later from the project timeline.
-                </>
-              )}
-            </p>
-            {archived ? (
-              <Button variant="mint" onClick={() => navigate('/archive')}>
-                Go to Archive
-              </Button>
+        {/* Active Step Content */}
+        <div className="min-h-[420px]">
+          {currentStep === 1 && <LookBackStep project={project} />}
+          {currentStep === 2 && <LookAroundStep project={project} />}
+          {currentStep === 3 && <LookInsideStep project={project} />}
+          {currentStep === 4 && <YourScoreStep project={project} />}
+          {currentStep === 5 && <ChoosePathStep project={project} />}
+        </div>
+
+        {/* Guided Navigation Footer: Back / Next / Skip */}
+        <div className="flex items-center justify-between border-t border-white/10 pt-4">
+          <button
+            type="button"
+            disabled={currentStep === 1}
+            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1) as StepNumber)}
+            className="px-4 py-2 bg-[#17163c] border-2 border-twilight font-display text-base text-cream hover:border-lavender disabled:opacity-30 disabled:pointer-events-none flex items-center gap-2"
+          >
+            <ArrowLeft className="size-4" />
+            <span>BACK</span>
+          </button>
+
+          <div className="flex items-center gap-3">
+            {currentStep < 5 && (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(5)}
+                className="text-xs text-dim hover:text-gold font-display uppercase tracking-wider underline mr-2"
+              >
+                Skip to Choose Path
+              </button>
+            )}
+
+            {currentStep < 5 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep((prev) => Math.min(5, prev + 1) as StepNumber)}
+                className="px-6 py-2.5 bg-gold text-night border-2 border-[#14122e] font-display text-lg font-bold shadow-[0_3px_0_#9a7000] flex items-center gap-2"
+              >
+                <span>NEXT: {STEPS[currentStep].label.toUpperCase()}</span>
+                <ArrowRight className="size-4" />
+              </button>
             ) : (
-              <Button variant="sky" onClick={choose} disabled={busy || (chosen && current !== 'archive')} className="!min-h-12 !px-6">
-                {chosen && current !== 'archive' ? 'Path chosen ✓' : busy ? 'Saving…' : 'Choose This Path'}
-              </Button>
+              <span className="text-xs text-mint font-display tracking-wider flex items-center gap-1.5">
+                <Sparkles className="size-4 text-gold" />
+                <span>FINAL STEP · DRAG KEYSTONE ONTO A PEDESTAL ABOVE</span>
+              </span>
             )}
           </div>
         </div>
       </div>
-      <ArchiveDialog project={project} open={archiving} onClose={() => setArchiving(false)} />
-    </div>
+    </DragLayer>
   );
 }

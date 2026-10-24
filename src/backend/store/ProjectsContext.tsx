@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { OpenStatus, PathId, Project, StallReason } from '@/backend/domain/types';
+import type { OpenStatus, PathId, Project, StallReason, TaskItem, SavedRepo } from '@/backend/domain/types';
 import type { ProjectDraft } from '@/backend/domain/draft';
 import { archiveProject, choosePath, createProject, decideProject, editProject, normaliseReasons, restoreProject, updateProgress, withReasons } from '@/backend/domain/ops';
 import { dedupeSamples, demoProjects, RETIRED_SAMPLE_IDS } from '@/backend/domain/seed';
@@ -32,6 +32,12 @@ interface Actions {
   decide(id: string, path: PathId): Promise<Project>;
   addReason(id: string, reason: StallReason): Promise<Project>;
   removeReason(id: string, reason: StallReason): Promise<Project>;
+  toggleTask(projectId: string, taskId: string): Promise<Project>;
+  setTasks(projectId: string, tasks: TaskItem[]): Promise<Project>;
+  setReminder(projectId: string, reminder: string | null): Promise<Project>;
+  saveReposEvaluation(projectId: string, repos: SavedRepo[]): Promise<Project>;
+  saveQuestionnaire(projectId: string, answers: Record<string, number | string>): Promise<Project>;
+  updateProjectDirect(project: Project): Promise<Project>;
   /** Puts back the twelve sample projects as they ship. Projects the user created are kept. */
   resetSamples(): Promise<void>;
   /** Reverts the most recent change. Resolves false when there is nothing to undo. */
@@ -204,6 +210,28 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         const old = find(id);
         return commit(withReasons(old, (old.reasons ?? []).filter((r) => r !== reason)));
       },
+      toggleTask: (projectId, taskId) => {
+        const old = find(projectId);
+        const tasks = (old.tasks ?? []).map((t) => (t.id === taskId ? { ...t, done: !t.done } : t));
+        return commit({ ...old, tasks });
+      },
+      setTasks: (projectId, tasks) => {
+        const old = find(projectId);
+        return commit({ ...old, tasks });
+      },
+      setReminder: (projectId, reminder) => {
+        const old = find(projectId);
+        return commit({ ...old, revisitReminder: reminder });
+      },
+      saveReposEvaluation: (projectId, repos) => {
+        const old = find(projectId);
+        return commit({ ...old, evaluatedRepos: repos });
+      },
+      saveQuestionnaire: (projectId, answers) => {
+        const old = find(projectId);
+        return commit({ ...old, questionnaireAnswers: answers });
+      },
+      updateProjectDirect: (project) => commit(project),
       resetSamples: async () => {
         snapshot();
         const samples = demoProjects();

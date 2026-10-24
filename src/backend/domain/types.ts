@@ -50,6 +50,21 @@ export interface TimelineEvent {
 
 export type ScoreStatus = 'complete' | 'provisional' | 'insufficient';
 
+export interface TaskItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export interface SavedRepo {
+  id: string;
+  name: string;
+  url: string;
+  stars: number;
+  description: string;
+  verdict: 'solved' | 'inspiring' | 'irrelevant';
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -86,4 +101,14 @@ export interface Project {
   timeline: TimelineEvent[];
   /** Sample record shipped with the app, not created by the user. */
   isDemo?: boolean;
+  /** Concrete next-step tasks generated upon choosing a path. */
+  tasks?: TaskItem[];
+  /** Revisit reminder date label (e.g., 'In 3 months: 2027-01-24'). */
+  revisitReminder?: string | null;
+  /** Decision history timeline notes. */
+  decisionNotes?: { path: PathId; note: string; at: string }[];
+  /** Evaluated GitHub repos feeding market signals. */
+  evaluatedRepos?: SavedRepo[];
+  /** Answers to the 6-question questionnaire. */
+  questionnaireAnswers?: Record<string, number | string>;
 }
