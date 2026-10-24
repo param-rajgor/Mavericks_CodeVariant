@@ -8,6 +8,7 @@ import { useSafe, useToast } from '@/frontend/ui/Toast';
 import { DropZone } from '@/frontend/dnd/DropZone';
 import { PATH_ICONS } from '@/frontend/dnd/icons';
 import type { DragItem } from '@/frontend/dnd/DragLayer';
+import { DragCard, CardPreview } from '@/frontend/dnd/DragCard';
 import { CheckSquare, Square, Calendar, History, Sparkles, ChevronDown, ChevronUp, GripVertical, Bell } from 'lucide-react';
 import { PixelSprite, SPROUT } from '@/frontend/ui/PixelSprite';
 
@@ -43,6 +44,15 @@ const PATH_TASKS: Record<PathId, string[]> = {
     'Celebrate what you learned while building it',
   ],
 };
+
+const isTask = (i: DragItem) => i.kind === 'task';
+const isToken = (i: DragItem) => i.payload === 'revisit';
+const REMINDERS = [
+  { months: 1, label: 'In 1 month' },
+  { months: 3, label: 'In 3 months' },
+  { months: 6, label: 'In 6 months' },
+  { months: 12, label: 'In 1 year' },
+];
 
 const isProjectCard = (item: DragItem) => item.kind === 'stone' || item.kind === 'card';
 
@@ -142,8 +152,9 @@ export function ChoosePathStep({ project }: { project: Project }) {
     }
   };
 
-  const handleToggleTask = async (taskId: string) => {
-    await actions.toggleTask(project.id, taskId);
+  const handleSetTask = async (taskId: string, done: boolean) => {
+    const task = project.tasks?.find((t) => t.id === taskId);
+    if (task && task.done !== done) await actions.toggleTask(project.id, taskId);
   };
 
   const handleSetReminder = async (months: number, label: string) => {
@@ -305,31 +316,32 @@ export function ChoosePathStep({ project }: { project: Project }) {
             <CheckSquare className="size-5 text-mint" />
             <h4 className="font-display text-2xl text-soft leading-none">NEXT-STEP PLAN: CONCRETE TASKS</h4>
           </div>
-          <span className="text-xs text-dim">Check off tasks as you execute</span>
+          <span className="text-xs text-dim">Drag a task onto DONE as you finish it</span>
         </div>
 
         {currentTasks ? (
-          <div className="space-y-2.5">
-            {currentTasks.map((task) => (
-              <button
-                key={task.id}
-                type="button"
-                onClick={() => handleToggleTask(task.id)}
-                className={`w-full p-3 flex items-center gap-3 border-2 transition-all text-left ${
-                  task.done
-                    ? 'bg-[#12142d] border-mint/40 text-dim line-through'
-                    : 'bg-[#17163c] border-twilight text-cream hover:border-lavender'
-                }`}
-              >
-                {task.done ? (
-                  <CheckSquare className="size-5 text-mint shrink-0" />
-                ) : (
-                  <Square className="size-5 text-dim shrink-0" />
-                )}
-                <span className="text-sm font-semibold">{task.text}</span>
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="mb-4 flex flex-wrap gap-4">
+              <DropZone id="task-done" label="DONE" description="Mark a task as done" color="#9CE6BD" idleHint="Drop a task here" accepts={isTask} onDrop={(i) => i.payload && void handleSetTask(i.payload, true)} width={200} height={84} />
+              <DropZone id="task-todo" label="STILL TO DO" description="Move a task back to still to do" color="#FFD166" idleHint="Drop a done task here" accepts={isTask} onDrop={(i) => i.payload && void handleSetTask(i.payload, false)} width={200} height={84} />
+            </div>
+            <div className="space-y-2.5">
+              {currentTasks.map((task) => (
+                <DragCard
+                  key={task.id}
+                  id={`task-${task.id}`}
+                  item={{ kind: 'task', label: task.text, payload: task.id, preview: <CardPreview title={task.done ? 'DONE TASK' : 'TASK'} hint={task.text} color={task.done ? '#9CE6BD' : '#FFD166'} /> }}
+                  className={`w-full p-3 flex items-center gap-3 border-2 transition-all text-left select-none ${
+                    task.done ? 'bg-[#12142d] border-mint/40 text-dim line-through' : 'bg-[#17163c] border-twilight text-cream'
+                  }`}
+                >
+                  <GripVertical className="size-4 text-dim shrink-0" />
+                  {task.done ? <CheckSquare className="size-5 text-mint shrink-0" /> : <Square className="size-5 text-dim shrink-0" />}
+                  <span className="text-base font-semibold">{task.text}</span>
+                </DragCard>
+              ))}
+            </div>
+          </>
         ) : (
           <p className="text-sm text-dim italic">
             Drag your Keystone onto a Path Pedestal above to automatically generate your concrete next-step task checklist!
@@ -354,35 +366,18 @@ export function ChoosePathStep({ project }: { project: Project }) {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2.5">
-          <button
-            type="button"
-            onClick={() => handleSetReminder(1, 'In 1 month')}
-            className="px-3 py-2 bg-[#17163c] border-2 border-twilight hover:border-gold font-display text-sm text-cream"
+        <div className="flex flex-wrap items-center gap-5">
+          <DragCard
+            id="revisit-token"
+            item={{ kind: 'token', label: 'Revisit token', payload: 'revisit', preview: <CardPreview title="REVISIT TOKEN" hint="Drop on a date" /> }}
+            className="p-4 bg-[#1b1944] border-4 border-gold shadow-[0_6px_0_#14122e] select-none"
           >
-            In 1 Month
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSetReminder(3, 'In 3 months')}
-            className="px-3 py-2 bg-[#17163c] border-2 border-twilight hover:border-gold font-display text-sm text-cream"
-          >
-            In 3 Months
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSetReminder(6, 'In 6 months')}
-            className="px-3 py-2 bg-[#17163c] border-2 border-twilight hover:border-gold font-display text-sm text-cream"
-          >
-            In 6 Months
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSetReminder(12, 'In 1 year')}
-            className="px-3 py-2 bg-[#17163c] border-2 border-twilight hover:border-gold font-display text-sm text-cream"
-          >
-            In 1 Year
-          </button>
+            <span className="font-display text-2xl text-gold block leading-none">⏰ REVISIT TOKEN</span>
+            <span className="text-sm text-cream block mt-1">Drag me onto a date</span>
+          </DragCard>
+          {REMINDERS.map((r) => (
+            <DropZone key={r.months} id={`remind-${r.months}`} label={r.label.toUpperCase()} description={`Remind me ${r.label.toLowerCase()}`} color="#FFD166" idleHint="Drop the token" accepts={isToken} onDrop={() => void handleSetReminder(r.months, r.label)} width={150} height={92} />
+          ))}
         </div>
       </div>
 

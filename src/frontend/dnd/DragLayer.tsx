@@ -25,7 +25,7 @@ import type { StallReason } from '@/backend/domain/types';
  * the hand-off from a drop to the zone that received it.
  */
 
-export type DragKind = 'stone' | 'reason' | 'reason-chip' | 'seed' | 'seed-card' | 'card';
+export type DragKind = 'stone' | 'reason' | 'reason-chip' | 'seed' | 'seed-card' | 'card' | 'repo' | 'task' | 'token';
 
 export interface DragItem {
   kind: DragKind;
@@ -36,6 +36,8 @@ export interface DragItem {
   projectId?: string;
   archived?: boolean;
   reason?: StallReason;
+  /** Which card it is, for cards that are not projects (a repo id, a task id, a token name). */
+  payload?: string;
 }
 
 export interface ZoneData {
