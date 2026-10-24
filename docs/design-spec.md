@@ -10,6 +10,27 @@ The whole site is a cozy, explorable, retro pixel-art world. Every project is a 
 
 **It must NOT look like:** a horror game, a real cemetery, a childish cartoon, a generic SaaS dashboard, or a normal website with pixel icons pasted on.
 
+
+## ⚠️ Latest decisions: these OVERRIDE anything older in this file
+These were made during the build, after the mockups were drawn:
+- **Fonts:** only two fonts are used.
+  - **Jersey 15** is the display font: headings, wordmark, nav, tabs, buttons, stone names, pills, chips, tags, numbers, labels.
+  - **Chakra Petch** (500/600) is the body font: descriptions, tooltips, panel text, card explanations, search, any sentence longer than about 5 words.
+  - Pixelify Sans, VT323, Nunito and DotGothic16 are **removed**. Use the CSS variables `--font-display` and `--font-body`.
+- **Logo:** a bold 16×16 pixel rocket shown at 48px, tilted 45°. White body, dark outline, lavender window, purple fins, orange flame. It sits next to RELAUNCH in Jersey 15 at about 44px with a 3px dark shadow, and is the same on both pages.
+- **Landing nav:** links are white, with a dark pixel text-shadow and a subtle dark backing band so they stay readable over the clouds.
+- **Readability:** all important text has a hard 2–3px dark pixel shadow or sits on a solid panel. Body text is at least 18px and at least #DED5F4 on dark backgrounds.
+- **Dashboard bottom bar:** one thin row of about 72px.
+  - The **Sort By control is removed**.
+  - Order from left to right: filter chips, divider, search (grows to fill), and the plant control on the far right.
+- **Project Found panel:**
+  - It closes on a click outside, on Esc, or when the same stone is clicked again.
+  - Clicking another stone switches the panel to that project.
+  - Popups, tooltips and panels always render above the stones (portal + z-index scale in `docs/canvas-protocol-plan.md`).
+- **Signposts:** a reusable `<Signpost>` component. Text always fits its board, wraps only on word boundaries, and every sign in a group uses the same font size.
+- **Canvas Protocol (hackathon rule):** primary actions are drag-and-drop only. See `docs/canvas-protocol-plan.md`. That file wins wherever it differs from this spec. For example, "+ PLANT A PROJECT" and "INSPECT THIS IDEA" are no longer buttons.
+- The project data now lives in `ProjectsContext` (persisted to IndexedDB), not `src/data/projects`.
+
 ---
 
 ## 1. Pages
@@ -277,27 +298,11 @@ Rules:
 ---
 
 ## 7. Typography
+See "Latest decisions" at the top of this file:
+- **Jersey 15** for display text, set large because it is narrow. Headline ~110px, dashboard headline ~90px, card and panel titles 44–52px, stone names 30px, buttons and nav 26–30px, pills and chips 22–24px. Use letter-spacing 1–2px on uppercase text.
+- **Chakra Petch** 500/600 for body text: 18–20px, line-height 1.45.
 
-| Role | Font (Google Fonts) | Used for |
-|---|---|---|
-| Display | **Pixelify Sans** 600–700 | Headlines, wordmark, nav links on the landing page, pixel buttons, stats bar, panel titles, percentages |
-| Mono subtitle | **VT323** | Landing subtitle only |
-| UI text | **Nunito** 600–800 | Stone names, status pills, tooltips, panel body text, tabs, chips, search |
-
-Desktop sizes to start from:
-
-| Element | Size |
-|---|---|
-| Landing headline | ~100px |
-| Dashboard headline | ~86px |
-| Panel title | ~38px |
-| Stone names | ~27px |
-| Pills | ~22px |
-| Body | 20–22px |
-
-Never use the pixel font for paragraphs. Text must stay sharp and must not flicker or glitch.
-
----
+Text must stay sharp and must not flicker or glitch.
 
 ## 8. Pixel-art rules
 
