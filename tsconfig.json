@@ -27,5 +27,8 @@
   "include": [
     "src",
     "vite.config.ts"
+  ],
+  "exclude": [
+    "src/_legacy"
   ]
 }

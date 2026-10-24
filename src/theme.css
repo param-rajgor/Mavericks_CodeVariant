@@ -1,0 +1,153 @@
+/* Relaunch design tokens — see docs/design-spec.md §6, §7, §8 for source values. */
+
+:root {
+  /* Backgrounds and sky */
+  --color-night-indigo: #24234f;
+  --color-panel-indigo: #2a2563;
+  --color-deep-panel: #1e1c48;
+  --color-dark-purple: #34316c;
+  --color-mid-purple: #57449a;
+  --color-twilight-violet: #8170c8;
+  --color-horizon-pink: #efa8b6;
+  --color-peach-glow: #f6b9ab;
+
+  /* Stones */
+  --color-stone: #c3b5e6;
+  --color-stone-light-edge: #e2d8f7;
+  --color-stone-shade: #9c8ccb;
+  --color-stone-deep-shade: #7a6aae;
+  --color-stone-outline: #3a2f6e;
+  --color-stone-engraving: #4a3e80;
+
+  /* Accents */
+  --color-lavender: #b995ff;
+  --color-lavender-bright: #d8b7ff;
+  --color-button-purple: #8a63e8;
+  --color-gold: #ffd166;
+  --color-button-gold: #ffc94d;
+  --color-lantern-gold: #ffbe55;
+  --color-soft-pink: #edb0d5;
+  --color-mint: #9ce6bd;
+
+  /* Text */
+  --color-text-primary: #f8f3ff;
+  --color-text-secondary: #ded5f4;
+  --color-text-dark: #2e2560;
+
+  /* Status pills: fill / border / text */
+  --status-stalled-fill: #f7b39c;
+  --status-stalled-border: #d9806a;
+  --status-stalled-text: #6e2a22;
+  --status-in-progress-fill: #a9e8bf;
+  --status-in-progress-border: #5fb37e;
+  --status-in-progress-text: #1f5534;
+  --status-to-revisit-fill: #ffd36e;
+  --status-to-revisit-border: #d9a23a;
+  --status-to-revisit-text: #5a3b0c;
+  --status-archived-fill: #ece4fb;
+  --status-archived-border: #a796d8;
+  --status-archived-text: #4b3f7a;
+
+  /* Grass */
+  --color-grass-highlight: #b4d27a;
+  --color-grass-light: #93c062;
+  --color-grass-mid: #76a84f;
+  --color-grass-dark: #5e9143;
+  --color-grass-deep: #4c7a3a;
+
+  /* Fonts */
+  --font-display: "Pixelify Sans", ui-monospace, monospace;
+  --font-mono: "VT323", ui-monospace, monospace;
+  --font-ui: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Pixel-art base unit: keep every sprite/notch/shadow a multiple of this. */
+  --pixel-unit: 4px;
+  --notch: var(--pixel-unit);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-night-indigo);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+img, canvas, svg.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Stepped corners: 1 "pixel" cut off each corner, per spec §8. Combine with a solid
+   background/border; never pair with border-radius or blurred shadows. */
+.notched {
+  clip-path: polygon(
+    var(--notch) 0,
+    calc(100% - var(--notch)) 0,
+    100% var(--notch),
+    100% calc(100% - var(--notch)),
+    calc(100% - var(--notch)) 100%,
+    var(--notch) 100%,
+    0 calc(100% - var(--notch)),
+    0 var(--notch)
+  );
+}
+
+/* Hard-edged offset shadow, no blur. Pass --shadow-color on the element. */
+.hard-shadow {
+  --shadow-color: var(--color-stone-outline);
+  box-shadow: var(--pixel-unit) var(--pixel-unit) 0 0 var(--shadow-color);
+}
+
+/* Ambient scene motion. Lengths use --s (screen px per art px) from the scene Stage. */
+@keyframes px-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+@keyframes px-firefly {
+  0% { transform: translate(0, 0); opacity: 0.15; }
+  25% { opacity: 1; }
+  50% { transform: translate(calc(var(--s) * 4px), calc(var(--s) * -5px)); opacity: 0.55; }
+  75% { opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 0.15; }
+}
+@keyframes px-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes px-fall {
+  0% { transform: translate(0, 0); opacity: 0; }
+  8% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(calc(var(--s) * -16px), calc(var(--s) * 70px)); opacity: 0; }
+}
+@keyframes px-z {
+  0% { transform: translate(0, 0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(calc(var(--s) * 4px), calc(var(--s) * -10px)); opacity: 0; }
+}
+@keyframes px-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(calc(var(--s) * 6px)); }
+}
+@keyframes px-sway {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(calc(var(--s) * 1px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
