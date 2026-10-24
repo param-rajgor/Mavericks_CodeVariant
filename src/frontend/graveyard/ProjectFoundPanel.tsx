@@ -1,9 +1,15 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useIsPresent } from 'motion/react';
-import { Calendar, Tag } from 'lucide-react';
+import { Calendar, Tag, AlertTriangle, GripVertical, X } from 'lucide-react';
+import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { PROJECT_ICONS } from '@/frontend/graveyard/gravestone/icons';
 import type { Stone as Project } from '@/frontend/graveyard/stone';
+import type { StallReason } from '@/backend/domain/types';
+import { STALL_REASON_META } from '@/backend/domain/paths';
+import { useProjects } from '@/backend/store/ProjectsContext';
+import { useToast } from '@/frontend/ui/Toast';
+import type { DragItem } from '@/frontend/dnd/DragLayer';
 
 interface ProjectFoundPanelProps {
   project: Project;
@@ -88,6 +94,56 @@ function useDismiss(panel: RefObject<HTMLElement | null>, onClose: () => void) {
   }, [panel, onClose]);
 }
 
+function DraggableReasonChip({ projectId, reason }: { projectId: string; reason: StallReason }) {
+  const { actions } = useProjects();
+  const label = STALL_REASON_META[reason]?.label ?? reason;
+  const data: DragItem = useMemo(
+    () => ({
+      kind: 'reason-chip',
+      label,
+      reason,
+      projectId,
+      preview: (
+        <span className="notched inline-flex items-center gap-1.5 px-3 py-1 bg-[#251f4d] border-2 border-coral shadow-[0_4px_0_#14122e] text-soft font-display text-sm uppercase">
+          <span>{label}</span>
+        </span>
+      ),
+    }),
+    [label, reason, projectId],
+  );
+
+  const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
+    id: `chip-${projectId}-${reason}`,
+    data,
+  });
+
+  return (
+    <span
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      data-draggable
+      className={`notched inline-flex items-center gap-1.5 px-2.5 py-1 text-sm bg-[#2b255c] border border-lavender select-none cursor-grab transition-all ${
+        isDragging ? 'opacity-30 border-dashed scale-95' : 'hover:border-coral'
+      }`}
+    >
+      <GripVertical className="size-3 text-dim shrink-0" />
+      <span className="font-display uppercase tracking-wide text-soft text-xs">{label}</span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          actions.removeReason(projectId, reason);
+        }}
+        className="text-dim hover:text-coral ml-1 text-xs font-bold leading-none"
+        title="Remove reason"
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
 function FloatingPanel({ project, onInspect, onClose, slot, onHeight }: ProjectFoundPanelProps & { onClose: () => void; slot: RefObject<HTMLDivElement | null>; onHeight: (h: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [dim, setDim] = useState(false);
@@ -141,6 +197,25 @@ function FloatingPanel({ project, onInspect, onClose, slot, onHeight }: ProjectF
 /** The game-inventory style panel that appears when a stone is clicked (spec §3). */
 export function ProjectFoundPanel({ project, onInspect }: ProjectFoundPanelProps) {
   const Icon = PROJECT_ICONS[project.icon];
+  const { actions } = useProjects();
+  const toast = useToast();
+  const dropData = useMemo(
+    () => ({
+      label: project.name,
+      accepts: (i: DragItem) => i.kind === 'reason',
+      onDrop: async (i: DragItem) => {
+        if (i.reason) {
+          await actions.addReason(project.id, i.reason);
+          toast.success(`Tagged "${project.name}"`, `Added reason: ${STALL_REASON_META[i.reason]?.label}`);
+        }
+      },
+    }),
+    [project.id, project.name, actions, toast],
+  );
+  const { setNodeRef: setPanelDropRef, isOver } = useDroppable({
+    id: `found-panel-drop-${project.id}`,
+    data: dropData,
+  });
 
   return (
     <motion.div
@@ -217,6 +292,33 @@ export function ProjectFoundPanel({ project, onInspect }: ProjectFoundPanelProps
               {tech}
             </span>
           ))}
+        </div>
+      </div>
+
+      {/* Pinned Stall Reasons as draggable chips (Phase 4) */}
+      <div
+        ref={setPanelDropRef}
+        style={{
+          marginBottom: 16,
+          padding: 8,
+          background: isOver ? 'rgba(255,209,102,0.1)' : 'rgba(20,18,46,0.3)',
+          border: isOver ? '2px dashed var(--color-gold)' : '1px solid rgba(255,255,255,0.08)',
+          transition: 'all 150ms ease-out',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 15, fontFamily: 'var(--font-display)', color: 'var(--color-coral)', marginBottom: 6 }}>
+          <AlertTriangle size={14} /> STALL REASONS (DRAG TO DETACH)
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {project.reasons.length > 0 ? (
+            project.reasons.map((r) => (
+              <DraggableReasonChip key={r} projectId={project.id} reason={r} />
+            ))
+          ) : (
+            <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+              Drag a reason from the left rack to tag why this idea stalled.
+            </span>
+          )}
         </div>
       </div>
 

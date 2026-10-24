@@ -1,19 +1,42 @@
-import type { Project } from '@/backend/domain/types';
+import { useMemo } from 'react';
+import type { Project, StallReason } from '@/backend/domain/types';
 import { ASSET_META, STALL_REASON_META, INTEREST_LABELS } from '@/backend/domain/paths';
 import { STATUS_UI, ago } from '@/backend/domain/insights';
 import { PROJECT_ICONS } from '@/frontend/graveyard/gravestone/icons';
 import { toStone } from '@/frontend/graveyard/stone';
-import { Check, Clock, AlertTriangle, Layers, Calendar } from 'lucide-react';
+import { useProjects } from '@/backend/store/ProjectsContext';
+import { useToast } from '@/frontend/ui/Toast';
+import { useDroppable } from '@dnd-kit/core';
+import type { DragItem } from '@/frontend/dnd/DragLayer';
+import { REASON_DEFS, DraggableReasonCard } from '@/frontend/graveyard/ReasonRack';
+import { Check, Clock, AlertTriangle, Layers, Calendar, GripVertical, X } from 'lucide-react';
 
 export function LookBackStep({ project }: { project: Project }) {
+  const { actions } = useProjects();
+  const toast = useToast();
   const stone = toStone(project);
   const Icon = PROJECT_ICONS[stone.icon];
   const ui = STATUS_UI[project.status];
-  const reasons = project.reasons?.length
-    ? project.reasons.map((r) => STALL_REASON_META[r]?.label ?? r).join(', ')
-    : project.stallReason
-      ? STALL_REASON_META[project.stallReason]?.label
-      : 'None recorded';
+
+  const dropData = useMemo(
+    () => ({
+      label: project.name,
+      accepts: (i: DragItem) => i.kind === 'reason',
+      onDrop: async (i: DragItem) => {
+        if (i.reason) {
+          await actions.addReason(project.id, i.reason);
+          toast.success(`Tagged "${project.name}"`, `Added reason: ${STALL_REASON_META[i.reason]?.label}`);
+        }
+      },
+    }),
+    [project.id, project.name, actions, toast],
+  );
+  const { setNodeRef: setReasonDropRef, isOver } = useDroppable({
+    id: `lookback-drop-${project.id}`,
+    data: dropData,
+  });
+
+  const pinnedReasons = project.reasons?.length ? project.reasons : project.stallReason ? [project.stallReason] : [];
 
   return (
     <div className="space-y-6">
@@ -77,16 +100,42 @@ export function LookBackStep({ project }: { project: Project }) {
             </div>
           </div>
 
-          {/* Why It Stopped */}
-          <div className="bg-[#151438] p-4 border-2 border-coral/30">
-            <div className="flex items-center gap-2 font-display text-xl text-coral mb-3">
-              <AlertTriangle className="size-5" />
-              <span>WHY IT STOPPED</span>
+          {/* Why It Stopped (Droppable Reason Zone) */}
+          <div
+            ref={setReasonDropRef}
+            className={`p-4 border-2 transition-all ${
+              isOver
+                ? 'bg-[#2a1a45] border-gold shadow-[0_0_16px_rgba(255,209,102,0.3)]'
+                : 'bg-[#151438] border-coral/30'
+            }`}
+          >
+            <div className="flex items-center justify-between font-display text-xl text-coral mb-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="size-5" />
+                <span>WHY IT STOPPED</span>
+              </div>
+              <span className="text-[10px] text-dim uppercase">Drop reason here</span>
             </div>
             <div className="space-y-2 text-sm">
               <div className="text-cream">
-                <span className="text-dim block text-xs">Primary Reasons:</span>
-                <span className="font-bold text-coral text-base">{reasons}</span>
+                <span className="text-dim block text-xs mb-1">Attached Reasons:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {pinnedReasons.map((r) => (
+                    <span
+                      key={r}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#251f4d] border border-coral text-xs font-display text-soft"
+                    >
+                      <span>{STALL_REASON_META[r]?.label ?? r}</span>
+                      <button
+                        type="button"
+                        onClick={() => actions.removeReason(project.id, r)}
+                        className="text-dim hover:text-coral font-bold ml-1 text-xs"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
               {project.stallReasonDetails && (
                 <p className="text-xs text-cream/90 bg-night/50 p-2 border border-white/5">
@@ -131,6 +180,21 @@ export function LookBackStep({ project }: { project: Project }) {
                 <span>Started: {new Date(project.startedAt).toLocaleDateString()}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Draggable Reason Rack for Decision Shrine (Phase 4) */}
+        <div className="mt-6 p-4 bg-[#151438] border-2 border-twilight">
+          <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
+            <span className="font-display text-sm text-gold uppercase tracking-wider">
+              DRAG A REASON CARD ONTO "WHY IT STOPPED" ABOVE
+            </span>
+            <span className="text-xs text-dim">Canvas Protocol Reason Cards</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {REASON_DEFS.map((r) => (
+              <DraggableReasonCard key={r.id} reason={r} />
+            ))}
           </div>
         </div>
 

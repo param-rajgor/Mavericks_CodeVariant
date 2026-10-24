@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProjects } from '@/backend/store/ProjectsContext';
@@ -8,12 +8,15 @@ import { useRoute } from '@/frontend/routing/router';
 import { NavBar } from '@/frontend/navigation/NavBar';
 import { Scene } from '@/frontend/scene/Scene';
 import { useChrome } from '@/frontend/shell/AppChrome';
+import { useToast } from '@/frontend/ui/Toast';
+import { STALL_REASON_META } from '@/backend/domain/paths';
 import { Heading } from './Heading';
 import { ProjectFoundSlot } from './ProjectFoundPanel';
 import { CONTROL_BAR_H, ControlBar } from './ControlBar';
 import { Gravestone, StoneFace } from './gravestone/Gravestone';
 import { ActionDock } from './ActionDock';
 import { SeedPacket } from './SeedPacket';
+import { ReasonRack } from './ReasonRack';
 import { DragLayer, type DragItem } from '@/frontend/dnd/DragLayer';
 import { matchesFilter, toStone, type FilterId, type Stone } from './stone';
 
@@ -36,8 +39,10 @@ function useRowZoom() {
   return w >= 900 ? Math.min(1, (w - 48 - 16) / row) : Math.min(1, (w - 24) / (3 * STONE_W + 2 * GAP));
 }
 
-/** A stone that is also a data card: drag it onto an Action Zone, or click it to look. */
+/** A stone that is also a data card: drag it onto an Action Zone, click it to look, or drop a reason onto it. */
 const DraggableStone = memo(function DraggableStone({ stone, selected, tooltip, onToggle }: { stone: Stone; selected: boolean; tooltip: boolean; onToggle: (id: string) => void }) {
+  const { actions } = useProjects();
+  const toast = useToast();
   const data = useMemo<DragItem>(
     () => ({
       kind: 'stone',
@@ -55,9 +60,30 @@ const DraggableStone = memo(function DraggableStone({ stone, selected, tooltip, 
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({ id: `stone-${stone.id}`, data });
   const drag = useMemo(() => ({ setNodeRef, listeners, attributes, isDragging }), [setNodeRef, listeners, attributes, isDragging]);
   const click = useCallback(() => onToggle(stone.id), [onToggle, stone.id]);
+
+  const dropData = useMemo(
+    () => ({
+      label: stone.name,
+      accepts: (i: DragItem) => i.kind === 'reason',
+      onDrop: async (i: DragItem) => {
+        if (i.reason) {
+          await actions.addReason(stone.id, i.reason);
+          toast.success(`Tagged "${stone.name}"`, `Added reason: ${STALL_REASON_META[i.reason]?.label ?? i.reason}`);
+        }
+      },
+    }),
+    [stone.id, stone.name, actions, toast],
+  );
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: `stone-drop-${stone.id}`,
+    data: dropData,
+  });
+
   return (
-    <div className={isDragging ? 'ghost-slot' : undefined}>
-      <Gravestone project={stone} variant="dashboard" layoutId={`stone-${stone.id}`} selected={selected} tooltip={tooltip && !isDragging} onClick={click} drag={drag} />
+    <div ref={setDropRef} style={{ outline: isOver ? '3px solid var(--color-gold)' : undefined }}>
+      <div className={isDragging ? 'ghost-slot' : undefined}>
+        <Gravestone project={stone} variant="dashboard" layoutId={`stone-${stone.id}`} selected={selected} tooltip={tooltip && !isDragging} onClick={click} drag={drag} />
+      </div>
     </div>
   );
 });
@@ -130,6 +156,9 @@ function Graveyard() {
       </div>
 
       <main id="main" style={{ position: 'relative', zIndex: 'var(--z-stones)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Why it stalled? Draggable Reason Rack (Phase 4) */}
+        <ReasonRack className="hidden lg:flex absolute left-8 top-32 z-20" />
+
         <div style={{ padding: '28px 32px 0' }}>
           <div style={{ position: 'relative' }}>
             <Heading />

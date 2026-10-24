@@ -128,11 +128,17 @@
 - [x] Phase 1: store + dnd-kit + Action Dock + undo
 - [x] Phase 2: Decision Shrine drop zones
 - [x] Phase 3: seed packet planting
-- [ ] Phase 4: reason cards
+- [x] Phase 4: reason cards
 - [ ] Phase 5: polish, accessibility, performance, settings/archive/edit
 
 Notes:
 - (add notes here after each phase: what changed, known issues, what's next)
+- **Phase 4 (done):**
+  - Created `ReasonRack` with 4 draggable stall reasons (Lack of Time, Lost Interest, Tech Hurdle, Unclear Direction).
+  - Positioned the Reason Rack on the left of the dashboard graveyard scene.
+  - Gravestones are droppable targets for reason cards, immediately tagging the project with instant toast feedback.
+  - `ProjectFoundPanel` shows pinned stall reasons as draggable chips; dragging a chip out or clicking "×" detaches the reason; the panel is also a droppable target for adding reasons.
+  - Added the Reason Rack and droppable reason target to the Decision Shrine's Step 1 (`LookBackStep`).
 - **Phase 3 (done):**
   - Replaced `+ PLANT A PROJECT` buttons in `ControlBar`, `GraveyardPage`, and `States` (Audit #1, #2) with draggable `SeedPacket`.
   - Replaced `NewProjectDialog` multi-step wizard with `SeedFormModal` (Audit #3).
