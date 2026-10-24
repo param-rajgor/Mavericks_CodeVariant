@@ -183,3 +183,14 @@ Notes:
   - z-index scale added to the theme: dock 60, drag 120, toast 130.
   - Not yet checked: the fps trace in DevTools, and a keyboard-drag pass in a real browser.
   - Next: Phase 2 (Decision Shrine path cards → drop zones on pedestals).
+
+## Final audit (after phase 5): every primary action is a drop
+Re-checked by searching every `<button>` / `<Button>` / `PixelButton` in `src/frontend`. These actions were still button clicks and were converted:
+- **Repo verdicts** (Decision Shrine step 2): the three Already solved / Inspiring / Not relevant buttons are now three drop zones; each repo is a draggable card. The Search button is gone: typing searches by itself.
+- **Gut check** (step 3): the 1–5 dials only set a local value. The answers are kept when the **Gut-check seal** card is dropped on **SEAL YOUR ANSWERS**.
+- **Next-step tasks** (step 5): task cards are dragged onto **DONE** or **STILL TO DO** (no tick boxes).
+- **Revisit reminder** (step 5): the four date buttons became four drop zones; a **Revisit token** card is dragged onto one.
+- **Reason chips**: the "×" remove button is gone. Dragging a chip out shows a **SHAKE IT OFF** zone (dashboard panel and Decision Shrine step 1).
+- **Dead code removed**: the old NewProjectDialog wizard and the Archive / Restore / Delete confirm dialogs (all had primary buttons and nothing used them any more).
+
+What is still a normal click, on purpose: navigation (nav tabs, steps, Back/Next, chapter dots, Log in / Get Started, "Open details"), filters, search fields, pager, opening a form (the seed packet, Edit), Close / Cancel, sliders and rating dials that only set values before the seal is dropped, "Try again", and the Undo link in toasts.

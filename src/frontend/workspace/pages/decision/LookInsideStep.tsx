@@ -2,6 +2,10 @@ import { useState } from 'react';
 import type { Project } from '@/backend/domain/types';
 import { Heart, Compass, Zap, HelpCircle } from 'lucide-react';
 import { useProjects } from '@/backend/store/ProjectsContext';
+import { useToast } from '@/frontend/ui/Toast';
+import { DropZone } from '@/frontend/dnd/DropZone';
+import { DragCard, CardPreview } from '@/frontend/dnd/DragCard';
+import type { DragItem } from '@/frontend/dnd/DragLayer';
 
 interface Question {
   id: string;
@@ -58,6 +62,7 @@ const QUESTIONS: Question[] = [
 
 export function LookInsideStep({ project }: { project: Project }) {
   const { actions } = useProjects();
+  const toast = useToast();
   const [answers, setAnswers] = useState<Record<string, number>>(() => {
     const saved = project.questionnaireAnswers;
     const initial: Record<string, number> = {};
@@ -67,10 +72,16 @@ export function LookInsideStep({ project }: { project: Project }) {
     return initial;
   });
 
-  const handleSelect = async (questionId: string, rating: number) => {
-    const next = { ...answers, [questionId]: rating };
-    setAnswers(next);
-    await actions.saveQuestionnaire(project.id, next);
+  // Choosing a number only sets the dial. The answers are kept when the gut-check seal is dropped on its zone.
+  const handleSelect = (questionId: string, rating: number) => {
+    setAnswers((a) => ({ ...a, [questionId]: rating }));
+    setSealed(false);
+  };
+  const [sealed, setSealed] = useState(() => !!project.questionnaireAnswers);
+  const seal = async () => {
+    await actions.saveQuestionnaire(project.id, answers);
+    setSealed(true);
+    toast.success('Gut check sealed', 'Your answers now count in the score.', { label: 'Undo', run: () => void actions.undo() });
   };
 
   // Compute conviction score (out of 30, normalized to 100)
@@ -111,6 +122,20 @@ export function LookInsideStep({ project }: { project: Project }) {
           </div>
           <p className="mt-1 text-sm text-cream">{moodVerdict.note}</p>
         </div>
+      </div>
+
+      {/* The seal: drag it onto the zone to keep the answers */}
+      <div className="rl-panel flex flex-wrap items-center gap-6 p-5 border-2 border-twilight">
+        <DragCard
+          id="gut-seal"
+          item={{ kind: 'token', label: 'Gut-check seal', payload: 'seal', preview: <CardPreview title="GUT-CHECK SEAL" hint="Drop on SEAL YOUR ANSWERS" color="#FF9DB5" /> }}
+          className="p-4 bg-[#1b1944] border-4 border-coral shadow-[0_6px_0_#14122e] select-none"
+        >
+          <span className="font-display text-2xl text-coral block leading-none">GUT-CHECK SEAL</span>
+          <span className="text-sm text-cream block mt-1">Set the 6 dials, then drag me →</span>
+        </DragCard>
+        <DropZone id="seal-zone" label="SEAL YOUR ANSWERS" description="Keep your gut-check answers" color="#FF9DB5" idleHint={sealed ? 'Sealed ✓ drop again to update' : 'Drop the seal here'} accepts={(i: DragItem) => i.payload === 'seal'} onDrop={() => void seal()} width={240} height={110} />
+        <p className="flex-1 min-w-[200px] text-sm text-cream">{sealed ? 'Your answers are sealed and count in the score.' : 'Not sealed yet. Your answers are only kept once the seal is dropped.'}</p>
       </div>
 
       {/* 6 Questions */}

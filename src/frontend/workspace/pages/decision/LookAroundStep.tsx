@@ -2,6 +2,9 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Project, SavedRepo } from '@/backend/domain/types';
 import { ExternalLink, Sparkles, CheckCircle2, Bookmark, EyeOff, Search, Loader2 } from 'lucide-react';
 import { useProjects } from '@/backend/store/ProjectsContext';
+import { DropZone } from '@/frontend/dnd/DropZone';
+import type { DragItem } from '@/frontend/dnd/DragLayer';
+import { DragCard, CardPreview } from '@/frontend/dnd/DragCard';
 
 // Realistic sample fallback repos based on domains & tags
 const REPO_CATALOG: Record<string, Omit<SavedRepo, 'verdict'>[]> = {
@@ -38,6 +41,13 @@ const DEFAULT_REPOS: Omit<SavedRepo, 'verdict'>[] = [
   { id: 'def-2', name: 'remix-run/react-router', url: 'https://github.com/remix-run/react-router', stars: 54100, description: 'Declarative routing for React web applications.' },
   { id: 'def-3', name: 'ant-design/ant-design', url: 'https://github.com/ant-design/ant-design', stars: 92400, description: 'An enterprise-class UI design language and React UI library.' },
 ];
+
+const VERDICT_ZONES: { id: 'solved' | 'inspiring' | 'irrelevant'; label: string; color: string }[] = [
+  { id: 'solved', label: 'ALREADY SOLVED', color: '#F7B39C' },
+  { id: 'inspiring', label: 'INSPIRING', color: '#9CE6BD' },
+  { id: 'irrelevant', label: 'NOT RELEVANT', color: '#B8B0D8' },
+];
+const isRepo = (i: DragItem) => i.kind === 'repo';
 
 export function LookAroundStep({ project }: { project: Project }) {
   const { actions } = useProjects();
@@ -93,9 +103,11 @@ export function LookAroundStep({ project }: { project: Project }) {
     }
   }, []);
 
+  // Typing searches by itself (after a short pause), so there is no Search button to press.
   useEffect(() => {
-    fetchGithubRepos(query);
-  }, []);
+    const t = window.setTimeout(() => void fetchGithubRepos(query), 650);
+    return () => clearTimeout(t);
+  }, [query, fetchGithubRepos]);
 
   const displayedRepos = useMemo(() => {
     if (liveRepos.length > 0) return liveRepos;
@@ -209,23 +221,39 @@ export function LookAroundStep({ project }: { project: Project }) {
               />
               <Search className="size-4 text-dim absolute left-2.5 top-1/2 -translate-y-1/2" />
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-3 py-1.5 bg-[#251f4d] border-2 border-gold text-gold font-display text-xs uppercase hover:bg-gold hover:text-night transition-all disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {loading && <Loader2 className="size-3 animate-spin" />}
-              {loading ? 'Searching…' : 'Search GitHub'}
-            </button>
+            {loading && <Loader2 className="size-4 animate-spin text-gold" aria-label="Searching" />}
           </form>
+        </div>
+
+        <p className="mb-3 text-sm text-cream">Drag each repo card onto a signal zone. Nothing to click.</p>
+        <div className="mb-5 flex flex-wrap gap-4">
+          {VERDICT_ZONES.map((z) => (
+            <DropZone
+              key={z.id}
+              id={`verdict-${z.id}`}
+              label={z.label}
+              description={`Mark a repo as ${z.label.toLowerCase()}`}
+              color={z.color}
+              idleHint="Drop a repo here"
+              accepts={isRepo}
+              onDrop={(i) => {
+                const repo = displayedRepos.find((r) => r.id === i.payload);
+                if (repo) void setVerdict(repo, z.id);
+              }}
+              width={200}
+              height={96}
+            />
+          ))}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayedRepos.map((repo) => {
             const current = evals[repo.id];
             return (
-              <div
+              <DragCard
                 key={repo.id}
+                id={`repo-${repo.id}`}
+                item={{ kind: 'repo', label: repo.name, payload: repo.id, preview: <CardPreview title={repo.name} hint={`★ ${repo.stars.toLocaleString()}`} /> }}
                 className="bg-[#151438] border-2 p-4 flex flex-col justify-between transition-all"
                 style={{
                   borderColor:
@@ -250,49 +278,10 @@ export function LookAroundStep({ project }: { project: Project }) {
                   <p className="mt-2 text-xs text-cream/90 leading-relaxed line-clamp-2">{repo.description}</p>
                 </div>
 
-                {/* Feedback Chips */}
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-1.5">
-                  <span className="text-[11px] font-display text-dim uppercase">Signal:</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setVerdict(repo, 'solved')}
-                      className={`px-2 py-1 text-xs font-display flex items-center gap-1 border transition-all ${
-                        current === 'solved'
-                          ? 'bg-coral text-night border-coral font-bold'
-                          : 'bg-[#1e1c48] text-coral border-coral/40 hover:border-coral'
-                      }`}
-                    >
-                      <CheckCircle2 className="size-3" />
-                      <span>Already Solved</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVerdict(repo, 'inspiring')}
-                      className={`px-2 py-1 text-xs font-display flex items-center gap-1 border transition-all ${
-                        current === 'inspiring'
-                          ? 'bg-mint text-night border-mint font-bold'
-                          : 'bg-[#1e1c48] text-mint border-mint/40 hover:border-mint'
-                      }`}
-                    >
-                      <Bookmark className="size-3" />
-                      <span>Inspiring</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVerdict(repo, 'irrelevant')}
-                      className={`px-2 py-1 text-xs font-display flex items-center gap-1 border transition-all ${
-                        current === 'irrelevant'
-                          ? 'bg-dim text-night border-dim font-bold'
-                          : 'bg-[#1e1c48] text-dim border-dim/40 hover:border-dim'
-                      }`}
-                    >
-                      <EyeOff className="size-3" />
-                      <span>Not Relevant</span>
-                    </button>
-                  </div>
+                <div className="mt-4 pt-3 border-t border-white/10 text-xs font-display uppercase text-dim">
+                  Signal: <span style={{ color: current === 'solved' ? '#ff9db5' : current === 'inspiring' ? '#a8e6a1' : undefined }}>{current ? VERDICT_ZONES.find((z) => z.id === current)?.label : 'not marked yet · drag me onto a zone'}</span>
                 </div>
-              </div>
+            </DragCard>
             );
           })}
         </div>

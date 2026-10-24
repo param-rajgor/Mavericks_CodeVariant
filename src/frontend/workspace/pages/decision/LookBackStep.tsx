@@ -8,6 +8,8 @@ import { useProjects } from '@/backend/store/ProjectsContext';
 import { useToast } from '@/frontend/ui/Toast';
 import { useDroppable } from '@dnd-kit/core';
 import type { DragItem } from '@/frontend/dnd/DragLayer';
+import { DraggableReasonChip } from '@/frontend/graveyard/ProjectFoundPanel';
+import { UnpinZone } from '@/frontend/dnd/UnpinZone';
 import { REASON_DEFS, DraggableReasonCard } from '@/frontend/graveyard/ReasonRack';
 import { Check, Clock, AlertTriangle, Layers, Calendar, GripVertical, X } from 'lucide-react';
 
@@ -118,24 +120,13 @@ export function LookBackStep({ project }: { project: Project }) {
             </div>
             <div className="space-y-2 text-sm">
               <div className="text-cream">
-                <span className="text-dim block text-xs mb-1">Attached Reasons:</span>
+                <span className="text-dim block text-xs mb-1">Attached reasons (drag one out to remove it):</span>
                 <div className="flex flex-wrap gap-1.5">
                   {pinnedReasons.map((r) => (
-                    <span
-                      key={r}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#251f4d] border border-coral text-xs font-display text-soft"
-                    >
-                      <span>{STALL_REASON_META[r]?.label ?? r}</span>
-                      <button
-                        type="button"
-                        onClick={() => actions.removeReason(project.id, r)}
-                        className="text-dim hover:text-coral font-bold ml-1 text-xs"
-                      >
-                        ×
-                      </button>
-                    </span>
+                    <DraggableReasonChip key={r} projectId={project.id} reason={r} />
                   ))}
                 </div>
+                <UnpinZone projectId={project.id} />
               </div>
               {project.stallReasonDetails && (
                 <p className="text-xs text-cream/90 bg-night/50 p-2 border border-white/5">

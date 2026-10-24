@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { Calendar, Tag, AlertTriangle, GripVertical, X } from 'lucide-react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { UnpinZone } from '@/frontend/dnd/UnpinZone';
 import { PROJECT_ICONS } from '@/frontend/graveyard/gravestone/icons';
 import type { Stone as Project } from '@/frontend/graveyard/stone';
 import type { StallReason } from '@/backend/domain/types';
@@ -94,8 +95,7 @@ function useDismiss(panel: RefObject<HTMLElement | null>, onClose: () => void) {
   }, [panel, onClose]);
 }
 
-function DraggableReasonChip({ projectId, reason }: { projectId: string; reason: StallReason }) {
-  const { actions } = useProjects();
+export function DraggableReasonChip({ projectId, reason }: { projectId: string; reason: StallReason }) {
   const label = STALL_REASON_META[reason]?.label ?? reason;
   const data: DragItem = useMemo(
     () => ({
@@ -129,17 +129,6 @@ function DraggableReasonChip({ projectId, reason }: { projectId: string; reason:
     >
       <GripVertical className="size-3 text-dim shrink-0" />
       <span className="font-display uppercase tracking-wide text-soft text-xs">{label}</span>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          actions.removeReason(projectId, reason);
-        }}
-        className="text-dim hover:text-coral ml-1 text-xs font-bold leading-none"
-        title="Remove reason"
-      >
-        ×
-      </button>
     </span>
   );
 }
@@ -307,7 +296,7 @@ export function ProjectFoundPanel({ project, onInspect }: ProjectFoundPanelProps
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 15, fontFamily: 'var(--font-display)', color: 'var(--color-coral)', marginBottom: 6 }}>
-          <AlertTriangle size={14} /> STALL REASONS (DRAG TO DETACH)
+          <AlertTriangle size={14} /> STALL REASONS (DRAG ONE OUT TO REMOVE IT)
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {project.reasons.length > 0 ? (
@@ -320,6 +309,7 @@ export function ProjectFoundPanel({ project, onInspect }: ProjectFoundPanelProps
             </span>
           )}
         </div>
+        <UnpinZone projectId={project.id} />
       </div>
 
       {project.lastDecision && (
